@@ -1,0 +1,230 @@
+import json
+import tempfile
+from datetime import datetime, timezone
+import unittest
+from pathlib import Path
+
+from ahforever import banco, bonus, catalogo, coletor, exportar, receitas
+from ahforever.api import Resposta
+from ahforever.config import Config
+from ahforever.resumo import chave_variante, resumir
+
+
+class TesteResumo(unittest.TestCase):
+    def test_preco_unitario_de_pilha(self):
+        r = resumir([{"item": {"id": 1}, "buyout": 1000, "quantity": 10}])
+        self.assertEqual(r[(1, "")].preco_min, 100)
+        self.assertEqual(r[(1, "")].quantidade, 10)
+
+    def test_so_lance_conta_mas_nao_tem_preco(self):
+        r = resumir([{"item": {"id": 1}, "bid": 50, "quantity": 1}])
+        self.assertIsNone(r[(1, "")].preco_min)
+        self.assertIsNone(r[(1, "")].preco_mercado)
+        self.assertEqual(r[(1, "")].n_anuncios, 1)
+
+    def test_preco_mercado_ignora_cauda_cara(self):
+        anuncios = [
+            {"item": {"id": 7}, "unit_price": 10, "quantity": 10},
+            {"item": {"id": 7}, "unit_price": 20, "quantity": 20},
+            {"item": {"id": 7}, "unit_price": 9999, "quantity": 70},
+        ]
+        r = resumir(anuncios)[(7, "")]
+        # 15% de 100 unidades = 15: dez a 10 e cinco a 20.
+        self.assertEqual(r.preco_mercado, (10 * 10 + 5 * 20) // 15)
+        self.assertEqual(r.preco_min, 10)
+
+    def test_variantes_ficam_separadas(self):
+        a = {"id": 5, "bonus_lists": [3, 1]}
+        b = {"id": 5, "bonus_lists": [1, 3], "modifiers": [{"type": 9, "value": 30}]}
+        self.assertEqual(chave_variante(a), "b1:3")
+        self.assertEqual(chave_variante(b), "b1:3;m9=30")
+        r = resumir([{"item": a, "buyout": 1, "quantity": 1}, {"item": b, "buyout": 2, "quantity": 1}])
+        self.assertEqual(len(r), 2)
+
+
+class ApiFalsa:
+    def __init__(self, rotas):
+        self.rotas = rotas
+        self.pedidos = []
+
+    regiao = "us"
+
+    def get(self, caminho, tipo_namespace="dynamic", desde=None, namespace=None):
+        self.pedidos.append((caminho, desde))
+        dados = self.rotas.get((caminho, namespace) if namespace else caminho)
+        if dados is None:
+            return Resposta(404, None, b"", None)
+        return Resposta(200, dados, json.dumps(dados).encode(), "Mon, 09 Nov 2026 12:00:00 GMT")
+
+
+INDICE = {"auctions": [
+    {"id": 113, "name": "Horde Auction House"},
+    {"id": 110, "name": "Alliance Auction House"},
+    {"id": 115, "name": "Horde Auction House"},
+]}
+CASA_113 = {"id": 113, "name": "Horde Auction House", "commodities": {"href": "x"}, "auctions": [
+    {"id": 1, "item": {"id": 720}, "buyout": 5000, "quantity": 1, "time_left": "LONG"},
+    {"id": 2, "item": {"id": 720}, "bid": 100, "quantity": 1, "time_left": "SHORT"},
+]}
+COMMODITIES_113 = {"auctions": [
+    {"id": 3, "item": {"id": 2589}, "unit_price": 34, "quantity": 200, "time_left": "LONG"},
+]}
+# Casa vazia: a API omite o campo auctions.
+CASA_115 = {"id": 115, "name": "Horde Auction House"}
+
+
+class TesteColetor(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        base = Path(self.tmp.name)
+        self.cfg = Config("us", "en_US", [2], ["Horde"], base / "ah.sqlite",
+                          base / "cred.env", base / "brutos", 2)
+        self.api = ApiFalsa({
+            "/data/wow/ruleset/2/auctions/": INDICE,
+            "/data/wow/ruleset/2/auctions/113": CASA_113,
+            "/data/wow/ruleset/2/auctions/113/commodities": COMMODITIES_113,
+            "/data/wow/ruleset/2/auctions/115": CASA_115,
+        })
+
+    def consultar(self, sql):
+        con = banco.abrir(self.cfg.banco)
+        self.addCleanup(con.close)
+        return con.execute(sql).fetchall()
+
+    def test_coleta_filtra_casas_e_grava_resumo(self):
+        coletor.coletar(self.cfg, self.api)
+        self.assertEqual(self.consultar("SELECT casa_id FROM casas ORDER BY 1"), [(113,), (115,)])
+        self.assertEqual(
+            self.consultar("SELECT casa_id, tipo, n_anuncios FROM coletas ORDER BY casa_id, tipo"),
+            [(113, "commodities", 1), (113, "itens", 2), (115, "itens", 0)],
+        )
+        self.assertEqual(
+            self.consultar("SELECT item_id, preco_min, quantidade, n_anuncios FROM precos ORDER BY 1"),
+            [(720, 5000, 2, 2), (2589, 34, 200, 1)],
+        )
+        self.assertEqual(len(list(self.cfg.pasta_brutos.glob("*.json.gz"))), 3)
+
+    def test_foto_repetida_nao_duplica(self):
+        coletor.coletar(self.cfg, self.api)
+        coletor.coletar(self.cfg, self.api)
+        self.assertEqual(self.consultar("SELECT count(*) FROM coletas"), [(3,)])
+        # Na segunda rodada o pedido leva o Last-Modified da primeira.
+        self.assertIn(("/data/wow/ruleset/2/auctions/113", "Mon, 09 Nov 2026 12:00:00 GMT"),
+                      self.api.pedidos)
+
+    def test_catalogo_usa_fonte_reserva_e_marca_o_que_falta(self):
+        item = {"name": "Brawler Gloves", "quality": {"type": "UNCOMMON"}, "level": 13,
+                "required_level": 8, "item_class": {"id": 4, "name": "Armor"},
+                "item_subclass": {"id": 2, "name": "Leather"},
+                "inventory_type": {"type": "HAND"}, "is_stackable": False, "sell_price": 120}
+        midia = {"assets": [{"key": "icon", "value": "https://x/icons/56/inv_gauntlets_05.jpg"}]}
+        # 720 só existe no Classic; 2589 não existe em lugar nenhum.
+        self.api.rotas[("/data/wow/item/720", "static-classic1x-us")] = item
+        self.api.rotas[("/data/wow/media/item/720", "static-classic1x-us")] = midia
+        coletor.coletar(self.cfg, self.api)
+        catalogo.catalogar(self.cfg, self.api)
+        self.assertEqual(
+            self.consultar("SELECT item_id, nome, nivel, classe, icone, fonte FROM itens ORDER BY 1"),
+            [(720, "Brawler Gloves", 13, "Armor", "inv_gauntlets_05", "static-classic1x-us"),
+             (2589, None, None, None, None, None)],
+        )
+        # Quem não foi achado só é tentado de novo depois de alguns dias.
+        n = len(self.api.pedidos)
+        catalogo.catalogar(self.cfg, self.api)
+        self.assertEqual(len(self.api.pedidos), n)
+
+    def test_historico_por_hora_e_resumo_do_dia_fechado(self):
+        con = banco.abrir(self.cfg.banco)
+        self.addCleanup(con.close)
+        fotos = [("2026-11-08T10:20:00Z", 100, 5), ("2026-11-08T11:20:00Z", 80, 7),
+                 ("2026-11-09T10:20:00Z", 90, 4)]
+        for i, (quando, preco, quantidade) in enumerate(fotos, 1):
+            con.execute("INSERT INTO coletas VALUES (?, 2, 113, 'itens', ?, NULL, ?, 3)", (i, quando, str(i)))
+            # Duas variantes do mesmo item viram um ponto só: menor preço, quantidades somadas.
+            con.execute("INSERT INTO precos VALUES (?, 720, '', ?, ?, ?, 1)", (i, preco, preco, quantidade))
+            con.execute("INSERT INTO precos VALUES (?, 720, 'b1', ?, ?, 1, 1)", (i, preco + 50, preco + 50))
+        con.commit()
+        destino = self.cfg.pasta_brutos.parent / "site"
+        horas, meses = exportar._historico(con, destino, 2, 113, "2026-11-09")
+        self.assertEqual((horas, meses), (["2026-11-08", "2026-11-09"], ["2026-11"]))
+        pasta = destino / "hist" / "2-113"
+        dia = json.loads((pasta / "h-2026-11-08.json").read_text())
+        self.assertEqual(dia["t"], ["2026-11-08T10:20:00Z", "2026-11-08T11:20:00Z"])
+        self.assertEqual(dia["itens"]["720"], [[100, 80], [6, 8]])
+        mes = json.loads((pasta / "d-2026-11.json").read_text())
+        self.assertEqual(mes, {"dias": ["2026-11-08"], "itens": {"720": [[80], [90], [7]]}})
+
+    def test_linhas_do_tooltip_seguem_a_ordem_do_jogo(self):
+        previa = {
+            "binding": {"type": "ON_EQUIP", "name": "Binds when equipped"},
+            "inventory_type": {"type": "TWOHWEAPON", "name": "Two-Hand"},
+            "item_subclass": {"name": "Staff", "id": 10},
+            "weapon": {"damage": {"display_string": "120 - 181 Damage"},
+                       "attack_speed": {"display_string": "Speed 3.60"},
+                       "dps": {"display_string": "(41.8 damage per second)"}},
+            "stats": [{"display": {"display_string": "+8 Stamina"}}],
+            "spells": [{"description": "Equip: Restores 4 mana per 5 sec."}],
+            "requirements": {"level": {"display_string": "Requires Level 49"}},
+            "sell_price": {"value": 35714},
+        }
+        self.assertEqual(exportar.linhas_do_tooltip(previa), [
+            ["Binds when equipped", ""],
+            ["Two-Hand", "", "Staff"],
+            ["120 - 181 Damage", "", "Speed 3.60"],
+            ["(41.8 damage per second)", ""],
+            ["+8 Stamina", ""],
+            ["Requires Level 49", ""],
+            ["Equip: Restores 4 mana per 5 sec.", "v"],
+            ["Sell Price: 3g 57s 14c", "c"],
+        ])
+        self.assertEqual(exportar.linhas_do_tooltip({}), [])
+
+    def test_receitas_sao_baixadas_uma_vez_e_exportadas_com_preco_de_npc(self):
+        ns = "static-forever-us"
+        self.api.rotas.update({
+            ("/data/wow/profession/index", ns): {"professions": [
+                {"id": 171, "name": "Alchemy"}, {"id": 2933, "name": "Test Profession [DNT]"}]},
+            ("/data/wow/profession/171", ns): {"skill_tiers": [{"id": 9}]},
+            ("/data/wow/profession/171/skill-tier/9", ns): {"categories": [
+                {"name": "Potions", "recipes": [{"id": 1, "name": "Minor Healing Potion"}]}]},
+            ("/data/wow/recipe/1", ns): {"crafted_item": {"id": 118}, "crafted_quantity": {"value": 1.0},
+                                         "reagents": [{"reagent": {"id": 3371}, "quantity": 1},
+                                                      {"reagent": {"id": 2447}, "quantity": 2}]},
+        })
+        receitas.baixar(self.cfg, self.api)
+        n = len(self.api.pedidos)
+        receitas.baixar(self.cfg, self.api)  # varredura recente: não consulta de novo
+        self.assertEqual(len(self.api.pedidos), n)
+        con = banco.abrir(self.cfg.banco)
+        self.addCleanup(con.close)
+        # Frasco vendido por NPC em lote de 5: o preço exportado é o da unidade.
+        con.execute("INSERT INTO itens (item_id, fonte, consultado_em, bruto) VALUES (3371, 'x', 'x', ?)",
+                    (json.dumps({"purchase_price": 20, "purchase_quantity": 5}),))
+        self.assertEqual(exportar._receitas(con), {
+            "profissoes": {171: "Alchemy"},
+            "receitas": [[1, 171, "Potions", "Minor Healing Potion", 118, 1.0, [[3371, 1], [2447, 2]]]],
+            "npc": {3371: 4},
+        })
+        # Os itens das receitas entram na fila do catálogo mesmo sem nunca terem aparecido no leilão.
+        self.assertEqual(catalogo.pendentes(con, datetime.now(timezone.utc)), [118, 2447])
+
+    def test_bonus_junta_sufixo_atributos_e_orcamento(self):
+        linhas = [
+            {"ParentItemBonusListID": "12718", "Type": "5", "Value_0": "14300", "Value_1": "0", "OrderIndex": "2"},
+            {"ParentItemBonusListID": "12718", "Type": "2", "Value_0": "7", "Value_1": "6666", "OrderIndex": "1"},
+            {"ParentItemBonusListID": "12718", "Type": "2", "Value_0": "5", "Value_1": "6666", "OrderIndex": "0"},
+            {"ParentItemBonusListID": "9", "Type": "23", "Value_0": "1", "Value_1": "0", "OrderIndex": "0"},
+        ]
+        ponto = {"ID": "36", **{f"{c}_{i}": str(v) for c, base in (("GoodF", 14), ("SuperiorF", 20), ("EpicF", 26))
+                                for i, v in enumerate((base, base - 3, base - 6, base - 8, base - 10))}}
+        dados = bonus.montar(linhas, [{"ID": "14300", "Description_lang": "of the Eagle"}],
+                             [ponto, {**ponto, "ID": "999"}])
+        self.assertEqual(dados["bonus"], {12718: ["of the Eagle", [[5, 6666], [7, 6666]]]})
+        self.assertEqual(dados["pontos"], {36: {"UNCOMMON": [14.0, 11.0, 8.0, 6.0, 4.0],
+                                                "RARE": [20.0, 17.0, 14.0, 12.0, 10.0],
+                                                "EPIC": [26.0, 23.0, 20.0, 18.0, 16.0]}})
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,1057 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Casa de Leilões – WoW Forever</title>
+<style>
+/* Visual baseado na casa de leilões moderna do jogo (a que o WoW: Forever usa): moldura cinza-chumbo,
+   título dourado, abas penduradas embaixo, cabeçalhos de coluna em pílula, linhas zebradas com o preço
+   à esquerda e botões vermelhos. Tudo em CSS, sem imagens do jogo. */
+:root {
+  color-scheme: dark;
+  --ouro: #ffd100; --ouro-fosco: #d8b651; --texto: #f2f2f2; --fraco: #9c9c9c;
+  --janela: #1b1b1b; --fundo-lista: #121212; --zebra: #1d1d1d; --metal: #5c5c5c; --metal-escuro: #333;
+  --titulo: "Friz Quadrata TT", "Friz Quadrata", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scrollbar-color: #5a5a5a #0d0d0d; }
+::-webkit-scrollbar { width: 13px; height: 13px; }
+::-webkit-scrollbar-track { background: #0d0d0d; box-shadow: inset 0 0 0 1px #000; }
+::-webkit-scrollbar-thumb { background: linear-gradient(90deg, #6a6a6a, #3a3a3a); border: 2px solid #0d0d0d; border-radius: 4px; }
+body { margin: 0; min-height: 100vh; padding: 26px 16px 74px; color: var(--texto);
+  background: #050607 radial-gradient(ellipse at 50% 0%, #26303a 0%, #10151a 45%, #050607 100%) fixed;
+  font: 14px/1.35 Arial, "Helvetica Neue", Helvetica, sans-serif; }
+
+/* ---- Moldura da janela ---- */
+.janela { position: relative; display: flex; flex-direction: column; max-width: 1240px; margin: 0 auto;
+  background: var(--janela); border: 1px solid #000; border-radius: 6px;
+  box-shadow: 0 0 0 1px #6b6b6b, 0 0 0 3px #242424, 0 0 0 4px #000, 0 20px 60px rgba(0, 0, 0, .8); }
+header { display: contents; }
+.barra-titulo { position: relative; display: flex; align-items: baseline; justify-content: center; gap: 10px;
+  padding: 7px 70px 6px; border-radius: 5px 5px 0 0; border-bottom: 1px solid #000;
+  background: linear-gradient(#3a3a3a, #262626 55%, #1c1c1c);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 -1px 0 #4a4a4a; }
+h1 { margin: 0; font: 15px var(--titulo); color: var(--ouro); letter-spacing: .4px; text-shadow: 0 1px 0 #000; }
+.barra-titulo .sub { font: 12px var(--titulo); color: var(--fraco); }
+/* Medalhão no canto, onde o jogo põe o retrato do personagem. */
+.emblema { position: absolute; z-index: 2; left: -12px; top: -16px; width: 62px; height: 62px; border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #fff6b0, #ffc400 38%, #a87400 72%, #4a3200);
+  box-shadow: 0 0 0 2px #000, 0 0 0 5px #c9a227, 0 0 0 6px #6b5310, 0 0 0 7px #000, 0 6px 14px rgba(0, 0, 0, .7); }
+.emblema::after { content: ""; position: absolute; inset: 9px; border-radius: 50%;
+  box-shadow: inset 0 0 0 2px rgba(90, 60, 0, .55), inset 0 3px 6px rgba(255, 255, 255, .35); }
+
+/* ---- Abas penduradas embaixo da janela, como no jogo ---- */
+.barra-abas { position: absolute; top: calc(100% + 3px); left: 0; right: 0; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 16px; padding: 0 8px 0 26px; }
+#abas { display: flex; gap: 4px; }
+#abas button { font: 13px var(--titulo); color: var(--ouro-fosco); padding: 7px 20px 8px; cursor: pointer; border: 1px solid #000; border-top: 0;
+  border-radius: 0 0 7px 7px; background: linear-gradient(#1f1f1f, #343434); text-shadow: 0 1px 0 #000;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .12), inset 0 0 0 1px rgba(120, 120, 120, .35), 0 3px 6px rgba(0, 0, 0, .5); }
+#abas button:hover { color: #fff; }
+#abas button.ativo { color: #fff; padding-bottom: 11px; background: linear-gradient(#5d4c10, #b3931f 70%, #d8b632);
+  box-shadow: inset 0 -1px 0 rgba(255, 245, 190, .6), inset 0 0 0 1px rgba(255, 220, 90, .55), 0 3px 8px rgba(0, 0, 0, .6); }
+.barra-abas label { flex-direction: row; align-items: center; gap: 8px; margin-left: auto; padding-top: 5px; }
+#atualizado { padding-top: 11px; color: var(--fraco); font-size: 12px; }
+
+/* ---- Estrutura ---- */
+main { display: grid; grid-template-columns: 220px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 8px; padding: 10px; min-height: 0; flex: 1; }
+main.sem-lateral { grid-template-columns: minmax(0, 1fr); }
+main.sem-lateral #categorias { display: none; }
+.painel { display: flex; flex-direction: column; min-height: 0; background: var(--fundo-lista); border: 1px solid #000; border-radius: 4px; overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--metal-escuro), 0 1px 0 rgba(255, 255, 255, .06); }
+
+/* ---- Categorias ---- */
+#categorias { align-self: start; max-height: 100%; overflow-y: auto; padding: 5px; gap: 2px; }
+#categorias button { display: block; width: 100%; flex: none; text-align: left; cursor: pointer; padding: 5px 9px; border: 1px solid #000; border-radius: 3px;
+  font: 13px var(--titulo); color: var(--ouro); text-shadow: 0 1px 0 #000;
+  background: linear-gradient(#3b3b3b, #272727);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .13), inset 0 0 0 1px rgba(110, 110, 110, .3); }
+#categorias button:hover { color: #fff; background: linear-gradient(#4a4a4a, #313131); }
+/* A linha escolhida fica com a faixa dourada do jogo. */
+#categorias button.ativo { color: #fff; background: linear-gradient(90deg, #b3931f, #7d6614 60%, #4d3f0d);
+  box-shadow: inset 0 1px 0 rgba(255, 245, 190, .45), inset 0 0 0 1px rgba(255, 220, 90, .5); }
+#categorias button.sub { width: auto; margin-left: 14px; padding: 4px 8px; font-size: 12.5px; color: #fff; border-color: transparent;
+  background: none; box-shadow: none; }
+#categorias button.sub:hover { background: rgba(255, 255, 255, .08); }
+#categorias button.sub.ativo { background: linear-gradient(90deg, #b3931f, #7d6614 60%, #4d3f0d); border-color: #000;
+  box-shadow: inset 0 0 0 1px rgba(255, 220, 90, .5); }
+#categorias button.slot { margin-left: 28px; font-size: 12px; }
+#categorias small { float: right; margin-left: 8px; font: 11px Arial, sans-serif; color: var(--fraco); text-shadow: none; }
+#categorias button.ativo small { color: #fff; }
+#categorias .grupo { padding: 10px 6px 3px; font: 11px Arial, sans-serif; text-transform: uppercase; letter-spacing: .6px; color: var(--fraco); }
+
+/* ---- Barra de busca ---- */
+#filtros, #filtros-prof { flex: none; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: end; padding: 9px 12px;
+  background: linear-gradient(#262626, #1a1a1a); border-bottom: 1px solid #000; box-shadow: inset 0 -1px 0 var(--metal-escuro); }
+label { display: flex; flex-direction: column; gap: 3px; font: 12px var(--titulo); color: var(--ouro); }
+input, select { background: #000; color: #fff; border: 1px solid #5a5a5a; border-radius: 6px; padding: 5px 8px;
+  font: 14px Arial, sans-serif; box-shadow: inset 0 2px 4px rgba(0, 0, 0, .9); }
+input::placeholder { color: #666; }
+input:focus, select:focus { outline: 0; border-color: var(--ouro); box-shadow: inset 0 2px 4px rgba(0, 0, 0, .9), 0 0 0 2px rgba(255, 209, 0, .22); }
+button:focus-visible { outline: 2px solid var(--ouro); outline-offset: 1px; }
+input[type=number] { width: 64px; }
+input[type=checkbox] { width: 16px; height: 16px; accent-color: #b8860b; box-shadow: none; }
+#f-nome, #p-nome { width: 210px; }
+.par { display: flex; gap: 4px; align-items: center; color: var(--fraco); }
+.caixa .par { color: var(--texto); font: 14px Arial, sans-serif; padding: 5px 0; gap: 6px; }
+/* Botão vermelho com filete dourado. */
+button.acao { cursor: pointer; padding: 6px 20px; border: 1px solid #000; border-radius: 4px; font: 13px var(--titulo); color: var(--ouro);
+  text-shadow: 0 1px 0 #000; background: linear-gradient(#9c1f17, #6a0d09 55%, #470705);
+  box-shadow: inset 0 1px 0 rgba(255, 170, 150, .45), inset 0 0 0 1px rgba(201, 162, 39, .55), 0 1px 2px rgba(0, 0, 0, .6); }
+button.acao:hover:not(:disabled) { color: #fff; background: linear-gradient(#bb281d, #81120c 55%, #560906); }
+button.acao:active:not(:disabled) { transform: translateY(1px); }
+button.acao:disabled { cursor: default; color: #7d7d7d; background: linear-gradient(#3d3d3d, #262626); box-shadow: inset 0 0 0 1px rgba(120, 120, 120, .35); }
+
+/* ---- Lista de resultados ---- */
+.rolagem { overflow-x: auto; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 560px; }
+thead th { position: sticky; top: 0; z-index: 1; }
+th { text-align: left; font: 12px var(--titulo); color: #fff; padding: 6px 10px; white-space: nowrap; user-select: none; text-shadow: 0 1px 0 #000;
+  background: linear-gradient(#3f3f3f, #252525); border: 1px solid #000; border-left: 0; border-radius: 5px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), inset 0 0 0 1px rgba(110, 110, 110, .3); }
+th[data-ordem] { cursor: pointer; }
+th[data-ordem]:hover { color: var(--ouro); background: linear-gradient(#4d4d4d, #2e2e2e); }
+th.num, td.num { text-align: right; }
+td { padding: 3px 10px; white-space: nowrap; font: 13.5px var(--titulo); }
+tr.item { background: var(--fundo-lista); }
+tr.item:nth-of-type(even) { background: var(--zebra); }
+tr.item:hover { background: linear-gradient(90deg, rgba(255, 209, 0, .22), rgba(255, 209, 0, .07)); }
+tr.item.abre { cursor: pointer; }
+tr.item[aria-expanded=true] { background: linear-gradient(90deg, #8a7118, #4d3f0d 55%, #2a230a); }
+td.nome { white-space: normal; display: flex; align-items: center; gap: 8px; }
+td.nome img, .semicone { width: 24px; height: 24px; flex: none; background: #000; border: 1px solid #000; border-radius: 3px;
+  box-shadow: 0 0 0 1px #6b6b6b; }
+.variantes { font: 11px Arial, sans-serif; color: var(--fraco); }
+td.nome .variantes { margin-left: 8px; }
+tr.variante td { background: #0c0c0c; font-size: 13px; }
+td.vnome { white-space: normal; padding-left: 42px; }
+td.vnome .variantes { display: inline; margin-left: 8px; }
+.q-POOR { color: #9d9d9d; } .q-COMMON { color: #fff; } .q-UNCOMMON { color: #1eff00; }
+.q-RARE { color: #3d9bff; } .q-EPIC { color: #c069ff; } .q-LEGENDARY { color: #ff8000; }
+.q-null { color: var(--fraco); font-style: italic; }
+.pos { color: #4be04b; } .neg { color: #ff6b5e; }
+
+/* ---- Moedas ---- */
+.moeda { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.m { display: inline-block; width: .9em; height: .9em; margin: 0 2px 0 3px; border-radius: 50%; vertical-align: -.1em;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .45), 0 0 1px rgba(0, 0, 0, .6); }
+.mg { background: radial-gradient(circle at 35% 30%, #fff6b0, #ffd100 45%, #a87400); }
+.ms { background: radial-gradient(circle at 35% 30%, #ffffff, #c7c7cf 45%, #6f6f7c); }
+.mc { background: radial-gradient(circle at 35% 30%, #ffd9b5, #d98a4e 45%, #7a3f17); }
+
+/* ---- Painel aberto: histórico, materiais, atributos ---- */
+tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #0a0a0a; box-shadow: inset 0 3px 8px rgba(0, 0, 0, .8); font: 13px Arial, sans-serif; }
+.hist { max-width: 800px; padding: 9px 12px; background: #141414; border: 1px solid #000; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--metal-escuro); }
+.hist-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 4px; }
+.hist-topo strong { font: 14px var(--titulo); color: var(--ouro); }
+.leitura { color: var(--texto); font-size: 13px; margin-right: auto; }
+.periodos button { cursor: pointer; padding: 3px 10px; border: 1px solid #000; border-radius: 3px; font: 12px var(--titulo); color: var(--ouro-fosco);
+  background: linear-gradient(#3b3b3b, #272727); box-shadow: inset 0 0 0 1px rgba(110, 110, 110, .3); }
+.periodos button.ativo { color: #fff; background: linear-gradient(#b3931f, #6b5712); box-shadow: inset 0 0 0 1px rgba(255, 220, 90, .5); }
+.rotulo { font-size: 11px; color: var(--fraco); text-transform: uppercase; letter-spacing: .5px; margin-top: 6px; }
+.hist svg { display: block; width: 100%; height: auto; }
+.hist svg text { fill: var(--fraco); font-size: 11px; }
+.hist .vazio, .cartao .vazio { color: var(--fraco); padding: 8px 0; }
+.atributos { max-width: 320px; margin-bottom: 10px; font-size: 13px; color: #fff; }
+.atributos .par, #dica .par { display: flex; justify-content: space-between; gap: 24px; color: inherit; }
+.reagentes { min-width: 0; width: auto; margin-bottom: 10px; }
+.reagentes td { padding: 2px 16px 2px 0; background: none !important; box-shadow: none !important; font-size: 13px; color: var(--texto); }
+.reagentes td.nome img, .reagentes .semicone { width: 20px; height: 20px; }
+.reagentes .fonte { color: var(--fraco); font-family: Arial, sans-serif; }
+
+/* ---- Textos de apoio e rodapé ---- */
+.titulo-bloco { flex: none; margin: 0; padding: 7px 12px; font: 14px var(--titulo); color: var(--ouro); text-shadow: 0 1px 0 #000;
+  background: linear-gradient(#333, #1f1f1f); border-bottom: 1px solid #000; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1); }
+.nota { flex: none; margin: 0; padding: 7px 12px; font-size: 12px; color: var(--fraco); border-bottom: 1px solid #000; background: #161616; }
+#aviso, .aviso { padding: 30px; text-align: center; color: var(--fraco); }
+#rodape { flex: none; display: flex; align-items: center; gap: 10px; padding: 7px 12px; color: var(--fraco); font-size: 13px;
+  background: linear-gradient(#222, #171717); border-top: 1px solid #000; box-shadow: inset 0 1px 0 var(--metal-escuro); }
+#rodape span { margin-right: auto; }
+
+/* ---- Resumo ---- */
+.cartoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; padding: 10px; }
+.cartao { display: flex; flex-direction: column; background: var(--fundo-lista); border: 1px solid #000; border-radius: 4px; overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--metal-escuro); }
+.cartao h2 { margin: 0; padding: 6px 12px; font: 14px var(--titulo); color: var(--ouro); text-shadow: 0 1px 0 #000;
+  background: linear-gradient(#3b3b3b, #272727); border-bottom: 1px solid #000; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .13); }
+.cartao table { min-width: 0; flex: 1; }
+.cartao td { padding: 2px 8px; font-size: 13px; }
+.cartao td.rank { width: 1.8em; padding-right: 0; text-align: right; color: var(--fraco); }
+.cartao td.nome img, .cartao .semicone { width: 22px; height: 22px; }
+.cartao .tipo { margin-left: 6px; font: 11px Arial, sans-serif; color: var(--fraco); }
+.cartao .vazio { padding: 14px 12px; }
+.cartao button { margin: 8px 10px 10px; align-self: flex-start; }
+
+/* ---- Tooltip, como o do jogo ---- */
+#dica { position: fixed; z-index: 10; pointer-events: none; width: max-content; max-width: min(330px, calc(100vw - 16px));
+  padding: 9px 11px; border: 1px solid #c4c4c4; border-radius: 6px; background: rgba(6, 7, 18, .96);
+  font-size: 13px; line-height: 1.35; color: #fff; box-shadow: 0 0 0 1px #000, 0 6px 18px rgba(0, 0, 0, .75); }
+#dica .titulo { font-size: 15px; margin-bottom: 1px; }
+.t-v { color: #1eff00; } .t-a { color: #ffd100; } .t-c { color: #9d9d9d; } .t-z { color: #87abff; }
+
+/* .sd só aparece em tela grande; .sm só no celular. */
+.sm, .mais-filtros { display: none; }
+/* Em tela grande a janela tem altura fixa e a lista rola por dentro, como no jogo. */
+@media (min-width: 761px) and (min-height: 560px) {
+  body { height: 100vh; overflow: hidden; }
+  .janela { height: 100%; }
+  #v-leiloes .rolagem { flex: 1; overflow: auto; }
+  #v-prof, #v-resumo { overflow-y: auto; }
+  #v-prof > *, #v-resumo > *, #bloco-mat > *, #bloco-rec > * { flex: none; }
+}
+@media (max-width: 760px) {
+  body { padding: 18px 0 64px; -webkit-tap-highlight-color: transparent; }
+  .janela { border-radius: 0; }
+  .barra-titulo { border-radius: 0; padding: 8px 12px 7px 62px; justify-content: flex-start; flex-wrap: wrap; }
+  .emblema { left: 4px; top: -10px; width: 46px; height: 46px; }
+  /* As abas viram a barra fixa do rodapé, com a escolha da casa ao lado. */
+  .barra-abas { position: fixed; z-index: 5; top: auto; bottom: 0; flex-wrap: nowrap; align-items: center; gap: 6px; padding: 14px 6px 6px;
+    background: linear-gradient(transparent, #050607 35%); }
+  #abas { gap: 3px; }
+  #abas button, #abas button.ativo { border-top: 1px solid #000; border-radius: 6px; padding: 11px 10px; }
+  .barra-abas label { margin-left: auto; padding: 0; font-size: 0; min-width: 0; }
+  .barra-abas select { max-width: 100%; min-width: 0; width: 118px; font-size: 14px; padding: 9px 4px; }
+  #atualizado { display: none; }
+  main { grid-template-columns: minmax(0, 1fr); padding: 6px; }
+  #categorias { flex-direction: row; overflow-x: auto; max-height: none; scrollbar-width: none; }
+  #categorias::-webkit-scrollbar { display: none; }
+  #categorias button, #categorias button.sub, #categorias button.slot { width: auto; margin-left: 0; white-space: nowrap; padding: 9px 12px; font-size: 13px; }
+  #categorias small { display: none; }
+  #categorias .grupo { align-self: center; padding: 0 6px; flex: none; }
+
+  /* Filtros: só a busca fica à vista; o resto abre pelo botão. */
+  #filtros, #filtros-prof { align-items: stretch; padding: 8px; gap: 8px; }
+  #filtros > label:first-child, #filtros-prof > label:first-child { flex: 1 1 60%; min-width: 0; }
+  #f-nome, #p-nome { width: 100%; }
+  .mais-filtros { display: block; align-self: flex-end; padding: 9px 14px; }
+  form:not(.aberto) > .avancado { display: none; }
+  /* 16px evita o zoom automático do iOS ao tocar no campo. */
+  input, select { font-size: 16px; padding: 8px; }
+  input[type=number] { width: 76px; }
+
+  /* Tabelas cabem na largura: as colunas secundárias somem e viram uma linha miúda sob o nome. */
+  .sd { display: none !important; }
+  .sm { display: block; font: 11px Arial, sans-serif; color: var(--fraco); }
+  table { min-width: 0; }
+  th[data-ordem="nome"], #bloco-mat th:first-child { width: 100%; }
+  thead th { position: static; padding: 6px 6px; }
+  td { padding: 8px 6px; white-space: normal; }
+  td.num { white-space: nowrap; }
+  td.nome { gap: 7px; }
+  td.nome .variantes { display: block; margin-left: 0; }
+  td.nome img, .semicone { width: 30px; height: 30px; }
+  tr.detalhe td { padding: 10px 8px 12px; }
+  td.vnome { padding-left: 8px; }
+  td.vnome .variantes { display: block; margin-left: 0; }
+  .hist { padding: 8px; }
+  .atributos { max-width: none; padding: 8px 10px; margin-bottom: 8px; background: rgba(6, 7, 18, .96); border: 1px solid #8a8a8a; border-radius: 6px; }
+  .reagentes td { padding: 3px 10px 3px 0; }
+  .nota { font-size: 11.5px; }
+  #rodape { padding: 8px; }
+  #rodape button { padding: 10px 16px; }
+  .cartoes { grid-template-columns: minmax(0, 1fr); padding: 6px; }
+  .cartao td { padding: 6px 8px; }
+}
+</style>
+</head>
+<body>
+<div class="janela">
+<header>
+  <div class="barra-titulo">
+    <span class="emblema" aria-hidden="true"></span>
+    <h1>Casa de Leilões</h1><span class="sub">WoW Forever</span>
+  </div>
+  <div class="barra-abas">
+    <nav id="abas" aria-label="Seções">
+      <button type="button" data-modo="leiloes" class="ativo">Leilões</button>
+      <button type="button" data-modo="profissoes">Profissões</button>
+      <button type="button" data-modo="resumo">Resumo</button>
+    </nav>
+    <label>Casa <select id="casa"></select></label>
+    <div id="atualizado"></div>
+  </div>
+</header>
+<main>
+  <nav id="categorias" class="painel" aria-label="Categorias"></nav>
+  <section class="painel" id="v-leiloes">
+    <form id="filtros" onsubmit="return false">
+      <label>Nome <input id="f-nome" type="search" placeholder="Buscar item" autocomplete="off"></label>
+      <button class="acao mais-filtros" type="button" aria-expanded="false">Filtros</button>
+      <label class="avancado">Nível requerido <span class="par"><input id="f-req-min" type="number" min="0" max="60" placeholder="mín">–<input id="f-req-max" type="number" min="0" max="60" placeholder="máx"></span></label>
+      <label class="avancado">Nível do item <span class="par"><input id="f-niv-min" type="number" min="0" placeholder="mín">–<input id="f-niv-max" type="number" min="0" placeholder="máx"></span></label>
+      <label class="avancado">Raridade mínima <select id="f-qualidade">
+        <option value="0">Todas</option><option value="1">Comum</option><option value="2">Incomum</option>
+        <option value="3">Raro</option><option value="4">Épico</option></select></label>
+      <label class="avancado">Preço máx. (ouro) <input id="f-preco" type="number" min="0" step="any" style="width:86px"></label>
+      <button class="acao avancado" type="button" id="limpar">Limpar</button>
+    </form>
+    <div class="rolagem">
+      <table>
+        <thead><tr>
+          <th data-ordem="min" class="num">Preço (un.)</th>
+          <th data-ordem="nome">Nome</th>
+          <th data-ordem="nivel" class="num sd">Nível</th>
+          <th data-ordem="req" class="num sd">Req.</th>
+          <th data-ordem="qtd" class="num">Disponível</th>
+          <th data-ordem="mercado" class="num sd">Mercado (un.)</th>
+        </tr></thead>
+        <tbody id="linhas"></tbody>
+      </table>
+    </div>
+    <div id="aviso">Carregando…</div>
+    <div id="rodape">
+      <span id="contagem"></span>
+      <button class="acao" type="button" id="anterior">Anterior</button>
+      <button class="acao" type="button" id="proxima">Próxima</button>
+    </div>
+  </section>
+  <section class="painel" id="v-prof" hidden>
+    <form id="filtros-prof" onsubmit="return false">
+      <label>Receita <input id="p-nome" type="search" placeholder="Buscar receita" autocomplete="off"></label>
+      <button class="acao mais-filtros" type="button" aria-expanded="false">Filtros</button>
+      <label class="avancado">Lucro mínimo (ouro) <input id="p-lucro" type="number" step="any" style="width:86px"></label>
+      <label class="avancado">Mín. à venda <input id="p-qtd" type="number" min="0" value="1"></label>
+      <label class="caixa avancado">Sem preço completo <span class="par"><input id="p-incompletas" type="checkbox"> mostrar</span></label>
+    </form>
+    <div id="bloco-mat" hidden>
+      <h2 class="titulo-bloco">Materiais brutos, do mais lucrativo ao menos</h2>
+      <p class="nota">Material coletado não tem custo de fabricação: o lucro é o menor preço do leilão menos os 5% da casa.
+        Quando o NPC paga mais do que isso, o valor aparece em vermelho e vale mais vender ao NPC.</p>
+      <div class="rolagem">
+        <table>
+          <thead><tr><th>Material</th><th class="num sd">Menor preço (un.)</th><th class="num sd">Mercado (un.)</th>
+            <th class="num" title="Menor preço menos os 5% da casa de leilões">Lucro (un., −5%)</th>
+            <th class="num sd" title="Quanto um vendedor NPC paga pela unidade">NPC paga</th><th class="num">À venda</th></tr></thead>
+          <tbody id="linhas-mat"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="bloco-rec">
+    <h2 class="titulo-bloco">Receitas</h2>
+    <p class="nota">Lucro potencial com os anúncios de agora: venda pelo menor preço, menos 5% da casa de leilões, menos os materiais
+      ao preço de mercado (ou de NPC, quando mais barato). Anúncio não é venda: olhe a quantidade à venda e o histórico antes de fabricar.</p>
+    <div class="rolagem">
+      <table>
+        <thead id="cab-prof"><tr>
+          <th data-ordem="nome">Receita</th>
+          <th data-ordem="categoria" class="sd">Categoria</th>
+          <th data-ordem="custo" class="num sd">Materiais</th>
+          <th data-ordem="bruto" class="num sd">Venda (−5%)</th>
+          <th data-ordem="lucro" class="num">Lucro</th>
+          <th data-ordem="margem" class="num sd">Margem</th>
+          <th data-ordem="qtd" class="num">À venda</th>
+        </tr></thead>
+        <tbody id="linhas-prof"></tbody>
+      </table>
+    </div>
+    <div id="aviso-prof" class="aviso" hidden></div>
+    </div>
+  </section>
+  <section class="painel" id="v-resumo" hidden>
+    <h2 class="titulo-bloco">Os 10 itens mais lucrativos de cada profissão, agora</h2>
+    <p class="nota">Fabricar: venda pelo menor preço, menos 5% da casa, menos os materiais. Coletar: menor preço menos 5%.
+      É lucro potencial, calculado sobre anúncios: um único anúncio caro pode pôr um item no topo. Abra a profissão para ver quantidade à venda e histórico.</p>
+    <div id="resumo" class="cartoes"></div>
+  </section>
+</main>
+</div>
+<div id="dica" hidden></div>
+<script>
+const POR_PAGINA = 50;
+const QUALIDADES = ["POOR", "COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY"];
+const SEM_CADASTRO = -1;
+// Ordem das categorias e dos slots como na casa de leilões do jogo.
+const ORDEM_CLASSES = [2, 4, 1, 0, 7, 6, 11, 9, 5, 15, 12, 13];
+const SLOTS = {HEAD: "Head", NECK: "Neck", SHOULDER: "Shoulder", BODY: "Shirt", CHEST: "Chest", WAIST: "Waist",
+  LEGS: "Legs", FEET: "Feet", WRIST: "Wrist", HAND: "Hands", FINGER: "Finger", TRINKET: "Trinket", CLOAK: "Back",
+  HOLDABLE: "Held In Off-hand", SHIELD: "Shield", TABARD: "Tabard"};
+const ARMADURA = 4;
+const posicao = (lista, v) => (lista.indexOf(v) + 1) || lista.length + 1;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+
+let meta, catalogo, bonusJogo, grupos = [], filtrados = [];
+let casaAtual;
+const estado = {classe: null, sub: null, slot: null, ordem: "nome", sentido: 1, pagina: 0, abertos: new Set(), periodo: "7d", modo: "leiloes"};
+
+async function json(caminho) {
+  const r = await fetch(caminho, {cache: "no-cache"});
+  if (!r.ok) throw new Error(`${caminho}: HTTP ${r.status}`);
+  return r.json();
+}
+
+const MOEDAS = {
+  g: '<i class="m mg" role="img" aria-label="ouro"></i>',
+  s: '<i class="m ms" role="img" aria-label="prata"></i>',
+  c: '<i class="m mc" role="img" aria-label="cobre"></i>'};
+// Troca as letras de "3g 57s 14c" pelas moedas, em textos que vêm prontos.
+const comMoedas = html => html.replace(/(\d)([gsc])(?= |$)/g, (_, n, letra) => n + MOEDAS[letra]);
+function moeda(cobre) {
+  if (cobre == null) return '<span class="q-null">só lance</span>';
+  const g = Math.floor(cobre / 10000), s = Math.floor(cobre / 100) % 100, c = cobre % 100;
+  let h = "";
+  if (g) h += `<span class="g">${g.toLocaleString("pt-BR")}</span>${MOEDAS.g} `;
+  if (g || s) h += `<span class="s">${s}</span>${MOEDAS.s} `;
+  return `<span class="moeda">${h}<span class="c">${c}</span>${MOEDAS.c}</span>`;
+}
+
+function moedaTexto(cobre) {
+  const g = Math.floor(cobre / 10000), s = Math.floor(cobre / 100) % 100, c = Math.round(cobre % 100);
+  return [g ? g.toLocaleString("pt-BR") + "g" : "", g || s ? s + "s" : "", c + "c"].filter(Boolean).join(" ");
+}
+
+// ---- Histórico de preços ----
+const PERIODOS = {"24h": "24 h", "7d": "7 dias", "tudo": "Tudo"};
+const arquivosHist = new Map(), pontosAbertos = new Map();
+function baixar(url) {
+  if (!arquivosHist.has(url))
+    arquivosHist.set(url, json(url).catch(e => { arquivosHist.delete(url); throw e; }));
+  return arquivosHist.get(url);
+}
+
+// Pontos por hora dos dias recentes; no período "Tudo", os dias anteriores entram resumidos (um ponto por dia).
+async function pontosDoItem(id) {
+  const base = `dados/hist/${casaAtual.ruleset}-${casaAtual.id}/`;
+  const horas = casaAtual.horas || [], meses = estado.periodo === "tudo" ? casaAtual.meses || [] : [];
+  const usados = estado.periodo === "24h" ? horas.slice(-2) : horas;
+  const [resumos, dias] = await Promise.all([
+    Promise.all(meses.map(m => baixar(`${base}d-${m}.json`))),
+    Promise.all(usados.map(d => baixar(`${base}h-${d}.json`)))]);
+  const pontos = [];
+  for (const r of resumos) {
+    const s = r.itens[id];
+    if (s) r.dias.forEach((dia, i) => {
+      if (!usados.includes(dia) && s[2][i] != null)
+        pontos.push({t: Date.parse(dia + "T12:00:00Z"), min: s[0][i], qtd: s[2][i], diario: true});
+    });
+  }
+  for (const d of dias) {
+    const s = d.itens[id];
+    if (s) d.t.forEach((t, i) => { if (s[1][i] != null) pontos.push({t: Date.parse(t), min: s[0][i], qtd: s[1][i]}); });
+  }
+  pontos.sort((a, b) => a.t - b.t);
+  if (estado.periodo !== "24h" || !pontos.length) return pontos;
+  const corte = pontos[pontos.length - 1].t - 24 * 3600e3;
+  return pontos.filter(p => p.t >= corte);
+}
+
+const GL = 640, GA = 130, GM = {e: 6, d: 6, t: 16, b: 18};
+function escalaX(pontos) {
+  const t0 = pontos[0].t, t1 = pontos[pontos.length - 1].t;
+  return t => t1 === t0 ? GL / 2 : GM.e + (t - t0) / (t1 - t0) * (GL - GM.e - GM.d);
+}
+function grafico(pontos, campo, cor, formato) {
+  const validos = pontos.filter(p => p[campo] != null);
+  if (!validos.length) return '<div class="vazio">Sem preço de arremate no período.</div>';
+  const x = escalaX(pontos), max = Math.max(...validos.map(p => p[campo])) || 1;
+  const y = v => GM.t + (1 - v / (max * 1.08)) * (GA - GM.t - GM.b);
+  const linha = validos.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)} ${y(p[campo]).toFixed(1)}`).join(" ");
+  const bolinhas = validos.length <= 48
+    ? validos.map(p => `<circle cx="${x(p.t).toFixed(1)}" cy="${y(p[campo]).toFixed(1)}" r="2.5" fill="${cor}"/>`).join("") : "";
+  const data = t => new Date(t).toLocaleString("pt-BR", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
+  const fim = pontos[pontos.length - 1].t;
+  return `<svg viewBox="0 0 ${GL} ${GA}" role="img" aria-label="Gráfico">
+    <line x1="${GM.e}" x2="${GL - GM.d}" y1="${GA - GM.b}" y2="${GA - GM.b}" stroke="#5a4630"/>
+    <line x1="${GM.e}" x2="${GL - GM.d}" y1="${y(max)}" y2="${y(max)}" stroke="#3a2e21" stroke-dasharray="3 4"/>
+    <text x="${GM.e}" y="${y(max) - 4}">${esc(formato(max))}</text>
+    <text x="${GM.e}" y="${GA - 4}">${data(pontos[0].t)}</text>
+    ${fim !== pontos[0].t ? `<text x="${GL - GM.d}" y="${GA - 4}" text-anchor="end">${data(fim)}</text>` : ""}
+    <path d="${linha}" fill="none" stroke="${cor}" stroke-width="1.8" stroke-linejoin="round"/>${bolinhas}
+    <line class="cursor" y1="${GM.t}" y2="${GA - GM.b}" stroke="#e8dcc6" stroke-opacity=".5" visibility="hidden"/>
+  </svg>`;
+}
+
+function leitura(p) {
+  const quando = new Date(p.t).toLocaleString("pt-BR", p.diario
+    ? {day: "2-digit", month: "2-digit", year: "numeric"}
+    : {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
+  return `${quando}${p.diario ? " (resumo do dia)" : ""} · ${moeda(p.min)} · ${p.qtd.toLocaleString("pt-BR")} un.`;
+}
+
+async function desenharHistorico(id) {
+  const caixas = () => document.querySelectorAll(`.hist[data-id="${id}"]`);
+  if (!caixas().length) return;
+  let pontos = [], erro;
+  try { pontos = await pontosDoItem(id); } catch (e) { erro = e; }
+  pontosAbertos.set(id, pontos);
+  for (const caixa of caixas()) {
+    const graficos = caixa.querySelector(".graficos");
+    if (erro) graficos.innerHTML = `<div class="vazio">Histórico indisponível: ${esc(erro.message)}</div>`;
+    else if (!pontos.length) graficos.innerHTML = '<div class="vazio">Ainda sem histórico para este item.</div>';
+    else {
+      caixa.querySelector(".leitura").innerHTML = leitura(pontos[pontos.length - 1]);
+      graficos.innerHTML =
+        `<div class="rotulo">Menor preço por unidade</div>${grafico(pontos, "min", "#ffd100", moedaTexto)}
+         <div class="rotulo">Quantidade à venda</div>${grafico(pontos, "qtd", "#6fb7ff", v => v.toLocaleString("pt-BR"))}`;
+    }
+  }
+}
+
+function celulaVariante(g, v) {
+  const d = decifrar(g, v.variante);
+  const nome = d.sufixo ? `${g.nome} ${d.sufixo}` : v.variante ? `Variante ${v.variante}` : `${g.nome} (sem sufixo)`;
+  return `<td class="vnome" colspan="3"><span class="q-${g.qualidade}">${esc(nome)}</span><span class="variantes">${esc(d.resumo.join(", "))}</span></td>`;
+}
+
+function caixaHistorico(id) {
+  const botoes = Object.entries(PERIODOS).map(([k, nome]) =>
+    `<button type="button" data-periodo="${k}" class="${k === estado.periodo ? "ativo" : ""}">${nome}</button>`).join(" ");
+  return `<tr class="detalhe"><td colspan="6">${semHover ? `<div class="atributos" data-id="${id}"></div>` : ""}${histHtml(id, botoes)}</td></tr>`;
+}
+function histHtml(id, botoes) {
+  botoes ??= Object.entries(PERIODOS).map(([k, nome]) =>
+    `<button type="button" data-periodo="${k}" class="${k === estado.periodo ? "ativo" : ""}">${nome}</button>`).join(" ");
+  return `<div class="hist" data-id="${id}">
+    <div class="hist-topo"><strong>Histórico</strong><span class="leitura"></span><span class="periodos">${botoes}</span></div>
+    <div class="graficos"><div class="vazio">Carregando…</div></div></div>`;
+}
+
+// ---- Variantes: sufixo e atributos calculados a partir do código de bônus ----
+// O orçamento de pontos depende do nível do item, da raridade e do grupo do slot.
+const GRUPO_SLOT = {HEAD: 0, CHEST: 0, LEGS: 0, TWOHWEAPON: 0, SHOULDER: 1, HAND: 1, WAIST: 1, FEET: 1, TRINKET: 1,
+  NECK: 2, WRIST: 2, FINGER: 2, CLOAK: 2, SHIELD: 2, HOLDABLE: 2, WEAPON: 3, WEAPONMAINHAND: 3, WEAPONOFFHAND: 3,
+  RANGED: 4, RANGEDRIGHT: 4, THROWN: 4, RELIC: 4};
+const ATRIBUTOS = {3: "Agility", 4: "Strength", 5: "Intellect", 6: "Spirit", 7: "Stamina", 51: "Fire Resistance",
+  52: "Frost Resistance", 53: "Holy Resistance", 54: "Shadow Resistance", 55: "Nature Resistance", 56: "Arcane Resistance"};
+const magia = escola => [`${escola} Spell Damage`, n => `Equip: Increases damage done by ${escola} spells and effects by up to ${n}.`];
+const EFEITOS = {
+  12: ["Defense", n => `Equip: Increased Defense +${n}.`],
+  38: ["Attack Power", n => `Equip: +${n} Attack Power.`],
+  41: ["Healing", n => `Equip: Increases healing done by spells and effects by up to ${n}.`],
+  42: ["Spell Damage", n => `Equip: Increases damage done by magical spells and effects by up to ${n}.`],
+  43: ["mana per 5 sec", n => `Equip: Restores ${n} mana per 5 sec.`],
+  45: ["Spell Power", n => `Equip: Increases damage and healing done by magical spells and effects by up to ${n}.`],
+  46: ["health per 5 sec", n => `Equip: Restores ${n} health per 5 sec.`],
+  84: magia("Holy"), 85: magia("Fire"), 86: magia("Nature"), 87: magia("Frost"), 88: magia("Shadow"), 89: magia("Arcane")};
+
+function decifrar(g, variante) {
+  const d = {sufixo: null, brancas: [], verdes: [], resumo: []};
+  const orcamento = bonusJogo.pontos[g.nivel]?.[g.qualidade]?.[GRUPO_SLOT[g.slot]];
+  for (const id of variante ? variante.slice(1).split(":") : []) {
+    const b = bonusJogo.bonus[id];
+    if (!b) continue;
+    d.sufixo = b[0] ?? d.sufixo;
+    for (const [atributo, alocacao] of b[1]) {
+      const n = orcamento == null ? null : Math.round(alocacao * orcamento / 10000);
+      const nome = ATRIBUTOS[atributo] ?? EFEITOS[atributo]?.[0];
+      if (!nome) continue;
+      d.resumo.push(n == null ? nome : `+${n} ${nome}`);
+      if (n == null) continue;
+      if (ATRIBUTOS[atributo]) d.brancas.push([`+${n} ${nome}`, ""]);
+      else d.verdes.push([EFEITOS[atributo][1](n), "v"]);
+    }
+  }
+  return d;
+}
+// Encaixa os atributos da variante onde o jogo os mostra: brancos antes da durabilidade, efeitos antes do preço.
+function linhasComVariante(base, d) {
+  const linhas = [...(base || [])];
+  const antes = padrao => { const i = linhas.findIndex(l => padrao.test(l[0])); return i < 0 ? linhas.length : i; };
+  linhas.splice(antes(/^(Durability|Requires|Classes|Equip:|Use:|Sell Price)/), 0, ...d.brancas);
+  linhas.splice(antes(/^Sell Price/), 0, ...d.verdes);
+  return linhas;
+}
+
+// ---- Tooltip com os atributos do item ----
+let tooltips;
+const semHover = matchMedia("(hover: none), (max-width: 760px)").matches;
+function carregarTooltips() {
+  tooltips ??= json("dados/tooltips.json").catch(e => { tooltips = undefined; throw e; });
+  return tooltips;
+}
+function linhasTooltip(linhas) {
+  return (linhas || []).map(([texto, classe, direita]) => direita
+    ? `<div class="par t-${classe}"><span>${esc(texto)}</span><span>${esc(direita)}</span></div>`
+    : `<div class="t-${classe}">${texto.startsWith("Sell Price:") ? comMoedas(esc(texto)) : esc(texto)}</div>`).join("");
+}
+let dicaDe = null;
+async function mostrarDica(g, e, variante) {
+  const chave = dicaDe = g.id + "|" + (variante ?? "");
+  const dados = await carregarTooltips().catch(() => null);
+  if (dicaDe !== chave) return;
+  const d = variante ? decifrar(g, variante) : null, base = dados && dados[g.id];
+  $("dica").innerHTML = `<div class="titulo q-${g.qualidade}">${esc(g.nome + (d?.sufixo ? " " + d.sufixo : ""))}</div>
+    ${linhasTooltip(d ? linhasComVariante(base, d) : base)}`;
+  $("dica").hidden = false;
+  moverDica(e);
+}
+function moverDica(e) {
+  const d = $("dica"), r = d.getBoundingClientRect();
+  // À direita e abaixo do cursor; vira para o outro lado quando não cabe.
+  let x = e.clientX + 18, y = e.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = Math.max(8, e.clientX - r.width - 14);
+  if (y + r.height > innerHeight - 8) y = Math.max(8, innerHeight - r.height - 8);
+  d.style.left = x + "px"; d.style.top = y + "px";
+}
+function preencherAtributos() {
+  if (!semHover || !document.querySelector(".atributos")) return;
+  carregarTooltips().then(dados => {
+    for (const caixa of document.querySelectorAll(".atributos")) {
+      const linhas = linhasTooltip(dados[caixa.dataset.id]);
+      caixa.innerHTML = linhas; caixa.hidden = !linhas;
+    }
+  }).catch(() => {});
+}
+function esconderDica() { dicaDe = null; $("dica").hidden = true; }
+
+// ---- Profissões: lucro por receita ----
+const CORTE_DA_CASA = 0.05;
+let receitas, todasReceitas = [], linhasProf = [];
+const porItem = new Map();
+const prof = {id: null, ordem: "lucro", sentido: -1, abertos: new Set(), materiaisAbertos: new Set()};
+// Subcategorias de Trade Goods que cada profissão coleta; ids negativos são listas só de materiais.
+const TRADE_GOODS = 7;
+const MATERIAIS = {182: [9], 186: [7], 393: [6], 356: [8], 333: [12]};
+const SO_MATERIAIS = [[-5, "Cloth", [5]], [-10, "Elemental", [10]], [-1, "Parts", [1]], [-11, "Other", [11]]];
+for (const [id, , subs] of SO_MATERIAIS) MATERIAIS[id] = subs;
+const materiaisDe = subs => grupos.filter(g => g.classe === TRADE_GOODS && subs.includes(g.sub));
+
+function infoItem(id) {
+  const g = porItem.get(id);
+  if (g) return g;
+  const i = catalogo.itens[id];
+  return i ? {id, nome: i[0], qualidade: i[1], icone: i[7], fonte: i[8]} : {id, nome: `Item #${id}`, qualidade: null};
+}
+function iconeHtml(i) {
+  return i.icone
+    ? `<img loading="lazy" alt="" src="https://render.worldofwarcraft.com/${esc(i.fonte)}/icons/56/${esc(i.icone)}.jpg">`
+    : `<span class="semicone"></span>`;
+}
+const moedaOuTraco = v => v == null ? "–" : (v < 0 ? "−" : "") + moeda(Math.abs(v));
+
+// Materiais pelo preço de mercado do leilão, ou pelo NPC quando ele vende mais barato.
+function precoReagente(id) {
+  const g = porItem.get(id), leilao = g ? (g.mercado ?? g.min) : null, npc = receitas.npc[id];
+  if (npc != null && (leilao == null || npc <= leilao)) return {preco: npc, fonte: "NPC"};
+  return {preco: leilao, fonte: leilao == null ? "sem anúncio" : "leilão"};
+}
+
+function calcularReceitas() {
+  todasReceitas = receitas.receitas.map(([rid, profId, categoria, nome, item, feitos, reagentes]) => {
+    const g = porItem.get(item), venda = g ? g.min : null;
+    let custo = 0, completo = true;
+    const partes = reagentes.map(([id, q]) => {
+      const p = precoReagente(id);
+      if (p.preco == null) completo = false; else custo += p.preco * q;
+      return {id, q, ...p};
+    });
+    const bruto = venda == null ? null : Math.round(venda * feitos * (1 - CORTE_DA_CASA));
+    const lucro = completo && bruto != null ? bruto - custo : null;
+    return {rid, profId, categoria: categoria || "", nome, busca: nome.toLowerCase(), item, feitos, partes,
+      custo: completo ? custo : null, bruto, lucro, margem: lucro != null && custo > 0 ? lucro / custo * 100 : null,
+      qtd: g ? g.qtd : 0};
+  });
+}
+
+function montarProfissoes() {
+  const lucrativas = new Map();
+  for (const l of todasReceitas) if (l.lucro > 0) lucrativas.set(l.profId, (lucrativas.get(l.profId) || 0) + 1);
+  $("categorias").innerHTML = Object.entries(receitas.profissoes).sort((a, b) => a[1].localeCompare(b[1])).map(([id, nome]) =>
+    `<button data-prof="${id}" class="${prof.id === +id ? "ativo" : ""}" title="Receitas com lucro agora">${esc(nome)} <small>${lucrativas.get(+id) || 0}</small></button>`).join("")
+    + `<div class="grupo">Materiais</div>` + SO_MATERIAIS.map(([id, nome, subs]) =>
+    `<button data-prof="${id}" class="${prof.id === id ? "ativo" : ""}">${nome} <small>${materiaisDe(subs).length}</small></button>`).join("");
+}
+
+function desenharMateriais() {
+  const subs = MATERIAIS[prof.id];
+  $("bloco-mat").hidden = !subs;
+  $("bloco-rec").hidden = prof.id < 0;
+  let h = "";
+  if (subs) {
+    const nome = $("p-nome").value.trim().toLowerCase(), valor = g => g.min ?? -1;
+    for (const g of materiaisDe(subs).filter(g => !nome || g.busca.includes(nome)).sort((a, b) => valor(b) - valor(a))) {
+      const aberto = prof.materiaisAbertos.has(g.id);
+      const lucro = g.min == null ? null : Math.round(g.min * (1 - CORTE_DA_CASA));
+      const npcMelhor = lucro != null && g.npc != null && g.npc > lucro;
+      h += `<tr class="item abre" data-id="${g.id}" aria-expanded="${aberto}">
+        <td class="nome">${iconeHtml(g)}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
+          <span class="sm">Menor preço ${moeda(g.min)}${g.npc ? ` · NPC paga ${moeda(g.npc)}` : ""}</span></span></td>
+        <td class="num sd">${moeda(g.min)}</td><td class="num sd">${moeda(g.mercado)}</td>
+        <td class="num ${npcMelhor ? "neg" : "pos"}">${moedaOuTraco(lucro)}</td><td class="num sd">${moedaOuTraco(g.npc)}</td>
+        <td class="num">${g.qtd.toLocaleString("pt-BR")}</td></tr>`;
+      if (aberto) h += `<tr class="detalhe"><td colspan="6">${histHtml(g.id)}</td></tr>`;
+    }
+  }
+  $("linhas-mat").innerHTML = h;
+}
+
+function filtrarProf() {
+  const nome = $("p-nome").value.trim().toLowerCase(), lucroMin = num("p-lucro"), qtdMin = num("p-qtd") ?? 0;
+  const incompletas = $("p-incompletas").checked;
+  linhasProf = todasReceitas.filter(l => l.profId === prof.id &&
+    (!nome || l.busca.includes(nome)) &&
+    (incompletas || l.lucro != null) &&
+    (incompletas && l.lucro == null || l.qtd >= qtdMin) &&
+    (lucroMin == null || (l.lucro != null && l.lucro >= lucroMin * 10000)));
+  const k = prof.ordem, s = prof.sentido;
+  linhasProf.sort((a, b) => {
+    if (k === "nome" || k === "categoria") return s * a[k].localeCompare(b[k]) || a.nome.localeCompare(b.nome);
+    if (a[k] == null || b[k] == null) return (a[k] == null) - (b[k] == null) || a.nome.localeCompare(b.nome);
+    return s * (a[k] - b[k]) || a.nome.localeCompare(b.nome);
+  });
+  desenharProf();
+}
+
+function desenharProf() {
+  let h = "";
+  for (const l of linhasProf) {
+    const i = infoItem(l.item), aberto = prof.abertos.has(l.rid), sinal = l.lucro == null ? "" : l.lucro >= 0 ? "pos" : "neg";
+    const margem = l.margem == null ? "–" : Math.round(l.margem).toLocaleString("pt-BR") + "%";
+    h += `<tr class="item abre" data-id="${l.item}" data-rid="${l.rid}" aria-expanded="${aberto}">
+      <td class="nome">${iconeHtml(i)}<span><span class="q-${i.qualidade}">${esc(l.nome)}</span>
+        ${l.feitos !== 1 ? `<span class="variantes">faz ${l.feitos} por vez</span>` : ""}
+        <span class="sm">${esc(l.categoria)}${margem === "–" ? "" : ` · margem ${margem}`}</span></span></td>
+      <td class="sd">${esc(l.categoria)}</td>
+      <td class="num sd">${moedaOuTraco(l.custo)}</td><td class="num sd">${moedaOuTraco(l.bruto)}</td>
+      <td class="num ${sinal}">${moedaOuTraco(l.lucro)}</td>
+      <td class="num sd ${sinal}">${margem}</td>
+      <td class="num">${l.qtd.toLocaleString("pt-BR")}</td></tr>`;
+    if (!aberto) continue;
+    const materiais = l.partes.map(p => {
+      const r = infoItem(p.id);
+      return `<tr data-id="${p.id}"><td class="nome">${iconeHtml(r)}<span class="q-${r.qualidade}">${esc(r.nome)}</span></td>
+        <td class="num">× ${p.q}</td><td class="num sd">${moedaOuTraco(p.preco)}</td>
+        <td class="num">${moedaOuTraco(p.preco == null ? null : p.preco * p.q)}</td><td class="fonte">${p.fonte}</td></tr>`;
+    }).join("");
+    h += `<tr class="detalhe"><td colspan="7"><div class="sm" style="margin-bottom:6px">Materiais ${moedaOuTraco(l.custo)} · venda líquida ${moedaOuTraco(l.bruto)}</div>
+      <table class="reagentes">${materiais}</table>${semHover ? `<div class="atributos" data-id="${l.item}"></div>` : ""}${histHtml(l.item)}</td></tr>`;
+  }
+  $("linhas-prof").innerHTML = h;
+  desenharMateriais();
+  $("aviso-prof").hidden = linhasProf.length > 0;
+  $("aviso-prof").textContent = "Nenhuma receita com esses filtros.";
+  pontosAbertos.clear();
+  esconderDica();
+  for (const l of linhasProf) if (prof.abertos.has(l.rid)) desenharHistorico(l.item);
+  if (MATERIAIS[prof.id]) for (const id of prof.materiaisAbertos) desenharHistorico(id);
+  preencherAtributos();
+  for (const th of document.querySelectorAll("#cab-prof th")) {
+    const ativo = th.dataset.ordem === prof.ordem;
+    th.textContent = th.textContent.replace(/ [▲▼]$/, "") + (ativo ? (prof.sentido > 0 ? " ▲" : " ▼") : "");
+    th.setAttribute("aria-sort", ativo ? (prof.sentido > 0 ? "ascending" : "descending") : "none");
+  }
+}
+
+function desenharResumo() {
+  const cartoes = Object.entries(receitas.profissoes).sort((a, b) => a[1].localeCompare(b[1])).map(([chave, nome]) => {
+    const id = +chave;
+    const entradas = todasReceitas.filter(l => l.profId === id && l.lucro > 0)
+      .map(l => ({item: l.item, nome: l.nome, lucro: l.lucro, tipo: "fabricar"}));
+    for (const g of materiaisDe(MATERIAIS[id] || []))
+      if (g.min != null) entradas.push({item: g.id, nome: g.nome, lucro: Math.round(g.min * (1 - CORTE_DA_CASA)), tipo: "coletar"});
+    const top = entradas.sort((a, b) => b.lucro - a.lucro).slice(0, 10);
+    const linhas = top.map((e, n) => {
+      const i = infoItem(e.item);
+      return `<tr class="item" data-id="${e.item}"><td class="rank">${n + 1}</td>
+        <td class="nome">${iconeHtml(i)}<span><span class="q-${i.qualidade}">${esc(e.nome)}</span><span class="tipo">${e.tipo}</span></span></td>
+        <td class="num pos">${moeda(e.lucro)}</td></tr>`;
+    }).join("");
+    return `<article class="cartao"><h2>${esc(nome)}</h2>
+      ${top.length ? `<table>${linhas}</table>` : '<div class="vazio">Nada com lucro nos anúncios de agora.</div>'}
+      <button class="acao" type="button" data-prof="${id}">Ver tudo de ${esc(nome)}</button></article>`;
+  });
+  $("resumo").innerHTML = cartoes.join("");
+}
+
+async function abrirResumo() {
+  $("resumo").innerHTML = '<div class="vazio">Carregando…</div>';
+  receitas ??= await json("dados/receitas.json");
+  calcularReceitas(); desenharResumo();
+}
+
+async function abrirProfissoes() {
+  $("aviso-prof").hidden = false; $("aviso-prof").textContent = "Carregando…";
+  receitas ??= await json("dados/receitas.json");
+  prof.id ??= +Object.entries(receitas.profissoes).sort((a, b) => a[1].localeCompare(b[1]))[0][0];
+  calcularReceitas(); montarProfissoes(); filtrarProf();
+}
+
+// Preenche só a seção visível, para o histórico aberto não existir em dobro.
+async function mostrarModo() {
+  const modo = estado.modo;
+  $("v-leiloes").hidden = modo !== "leiloes";
+  $("v-prof").hidden = modo !== "profissoes";
+  $("v-resumo").hidden = modo !== "resumo";
+  document.querySelector("main").classList.toggle("sem-lateral", modo === "resumo");
+  for (const b of document.querySelectorAll("#abas button")) b.classList.toggle("ativo", b.dataset.modo === modo);
+  for (const id of ["linhas", "linhas-prof", "linhas-mat", "resumo"]) $(id).innerHTML = "";
+  esconderDica();
+  if (modo === "profissoes") await abrirProfissoes();
+  else if (modo === "resumo") await abrirResumo();
+  else { montarCategorias(); desenhar(); }
+}
+function trocarModo(modo) { estado.modo = modo; mostrarModo().catch(falhou); }
+
+function haQuanto(iso) {
+  const min = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (min < 1) return "agora";
+  if (min < 60) return `há ${min} min`;
+  const h = Math.floor(min / 60);
+  return h < 48 ? `há ${h} h` : `há ${Math.floor(h / 24)} dias`;
+}
+
+// Junta as variantes do mesmo item numa linha só.
+function agrupar(linhas) {
+  const porItem = new Map();
+  for (const [id, variante, min, mercado, qtd, anuncios] of linhas) {
+    let g = porItem.get(id);
+    if (!g) {
+      const i = catalogo.itens[id];
+      // Robes ocupam o peito: no jogo aparecem em Chest.
+      g = i ? {id, nome: i[0], qualidade: i[1], nivel: i[2], req: i[3], classe: i[4], sub: i[5],
+               slot: i[6] === "ROBE" ? "CHEST" : i[6], icone: i[7], fonte: i[8], npc: i[9] || null}
+            : {id, nome: `Item #${id} (sem cadastro)`, qualidade: null, nivel: null, req: null, classe: SEM_CADASTRO, sub: null};
+      Object.assign(g, {min: null, mercado: null, qtd: 0, anuncios: 0, variantes: []});
+      g.busca = g.nome.toLowerCase();
+      g.q = QUALIDADES.indexOf(g.qualidade);
+      porItem.set(id, g);
+    }
+    // Só os bônus distinguem variantes; os modificadores (ex.: m28) não mudam o item.
+    const chave = variante.split(";").filter(parte => parte[0] === "b").join(";");
+    let v = g.variantes.find(x => x.variante === chave);
+    if (!v) g.variantes.push(v = {variante: chave, min: null, mercado: null, qtd: 0, anuncios: 0});
+    v.qtd += qtd; v.anuncios += anuncios;
+    if (min != null && (v.min == null || min < v.min)) { v.min = min; v.mercado = mercado; }
+    g.qtd += qtd; g.anuncios += anuncios;
+    if (min != null && (g.min == null || min < g.min)) { g.min = min; g.mercado = mercado; }
+  }
+  return [...porItem.values()];
+}
+
+function montarCategorias() {
+  const contagem = new Map();
+  for (const g of grupos) {
+    contagem.set(g.classe, (contagem.get(g.classe) || 0) + 1);
+    contagem.set(g.classe + "/" + g.sub, (contagem.get(g.classe + "/" + g.sub) || 0) + 1);
+  }
+  const classes = Object.entries(catalogo.classes)
+    .map(([id, c]) => ({id: +id, nome: c.nome, sub: c.sub}))
+    .filter(c => contagem.has(c.id))
+    .sort((a, b) => posicao(ORDEM_CLASSES, a.id) - posicao(ORDEM_CLASSES, b.id) || a.nome.localeCompare(b.nome));
+  if (contagem.has(SEM_CADASTRO)) classes.push({id: SEM_CADASTRO, nome: "Sem cadastro", sub: {}});
+  let h = `<button data-classe="" class="${estado.classe == null ? "ativo" : ""}">Todos <small>${grupos.length}</small></button>`;
+  for (const c of classes) {
+    const aberta = estado.classe === c.id;
+    h += `<button data-classe="${c.id}" class="${aberta && estado.sub == null ? "ativo" : ""}">${esc(c.nome)} <small>${contagem.get(c.id)}</small></button>`;
+    if (!aberta) continue;
+    // A API dá o mesmo nome às armas de uma e de duas mãos (subclasses 1, 5 e 8 são as de duas).
+    const subs = Object.entries(c.sub).filter(([s]) => contagem.has(c.id + "/" + s))
+      .map(([s, nome]) => [s, c.id === 2 && [1, 5, 8].includes(+s) ? nome + " (duas mãos)" : nome])
+      .sort((a, b) => a[1].localeCompare(b[1]));
+    if (subs.length < 2) continue;
+    for (const [s, nome] of subs) {
+      const escolhida = estado.sub === +s;
+      h += `<button data-classe="${c.id}" data-sub="${s}" class="sub ${escolhida && estado.slot == null ? "ativo" : ""}">${esc(nome)} <small>${contagem.get(c.id + "/" + s)}</small></button>`;
+      if (!escolhida || c.id !== ARMADURA) continue;
+      // Terceiro nível, só em armaduras: o slot (Head, Shoulder, ...).
+      const porSlot = new Map();
+      for (const g of grupos) if (g.classe === c.id && g.sub === +s && SLOTS[g.slot]) porSlot.set(g.slot, (porSlot.get(g.slot) || 0) + 1);
+      if (porSlot.size < 2) continue;
+      for (const slot of Object.keys(SLOTS)) if (porSlot.has(slot))
+        h += `<button data-classe="${c.id}" data-sub="${s}" data-slot="${slot}" class="sub slot ${estado.slot === slot ? "ativo" : ""}">${SLOTS[slot]} <small>${porSlot.get(slot)}</small></button>`;
+    }
+  }
+  $("categorias").innerHTML = h;
+}
+
+const num = id => $(id).value === "" ? null : +$(id).value;
+
+function filtrar() {
+  const nome = $("f-nome").value.trim().toLowerCase();
+  const reqMin = num("f-req-min"), reqMax = num("f-req-max"), nivMin = num("f-niv-min"), nivMax = num("f-niv-max");
+  const qMin = +$("f-qualidade").value, preco = num("f-preco");
+  const precoMax = preco == null ? null : preco * 10000;
+  filtrados = grupos.filter(g =>
+    (estado.classe == null || g.classe === estado.classe) &&
+    (estado.sub == null || g.sub === estado.sub) &&
+    (estado.slot == null || g.slot === estado.slot) &&
+    (!nome || g.busca.includes(nome)) &&
+    (reqMin == null || (g.req != null && g.req >= reqMin)) &&
+    (reqMax == null || (g.req != null && g.req <= reqMax)) &&
+    (nivMin == null || (g.nivel != null && g.nivel >= nivMin)) &&
+    (nivMax == null || (g.nivel != null && g.nivel <= nivMax)) &&
+    g.q >= qMin &&
+    (precoMax == null || (g.min != null && g.min <= precoMax)));
+  ordenar();
+}
+
+function ordenar() {
+  const k = estado.ordem, s = estado.sentido;
+  filtrados.sort((a, b) => {
+    if (k === "nome") return s * a.nome.localeCompare(b.nome);
+    // Valores vazios sempre no fim, em qualquer sentido.
+    if (a[k] == null || b[k] == null) return (a[k] == null) - (b[k] == null) || a.nome.localeCompare(b.nome);
+    return s * (a[k] - b[k]) || a.nome.localeCompare(b.nome);
+  });
+  estado.pagina = 0;
+  desenhar();
+}
+
+function desenhar() {
+  const inicio = estado.pagina * POR_PAGINA, pagina = filtrados.slice(inicio, inicio + POR_PAGINA);
+  let h = "";
+  for (const g of pagina) {
+    const varias = g.variantes.length > 1, aberto = estado.abertos.has(g.id);
+    const icone = g.icone
+      ? `<img loading="lazy" alt="" src="https://render.worldofwarcraft.com/${esc(g.fonte)}/icons/56/${esc(g.icone)}.jpg">`
+      : `<span class="semicone"></span>`;
+    h += `<tr class="item abre" data-id="${g.id}" aria-expanded="${aberto}">
+      <td class="num">${moeda(g.min)}</td>
+      <td class="nome">${icone}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
+        ${varias ? `<span class="variantes">${g.variantes.length} variantes</span>` : ""}
+        ${g.nivel != null ? `<span class="sm">Nível ${g.nivel}${g.req ? ` · requer ${g.req}` : ""}</span>` : ""}</span></td>
+      <td class="num sd">${g.nivel ?? "–"}</td><td class="num sd">${g.req || "–"}</td>
+      <td class="num">${g.qtd.toLocaleString("pt-BR")}</td>
+      <td class="num sd">${moeda(g.mercado)}</td></tr>`;
+    if (aberto) h += caixaHistorico(g.id);
+    if (varias && aberto)
+      for (const v of [...g.variantes].sort((a, b) => (a.min ?? Infinity) - (b.min ?? Infinity)))
+        h += `<tr class="variante" data-id="${g.id}" data-variante="${esc(v.variante)}"><td class="num">${moeda(v.min)}</td>
+          ${celulaVariante(g, v)}<td class="num">${v.qtd.toLocaleString("pt-BR")}</td><td class="num sd">${moeda(v.mercado)}</td></tr>`;
+  }
+  $("linhas").innerHTML = h;
+  pontosAbertos.clear();
+  for (const g of pagina) if (estado.abertos.has(g.id)) desenharHistorico(g.id);
+  esconderDica();
+  preencherAtributos();
+  $("aviso").hidden = filtrados.length > 0;
+  $("aviso").textContent = "Nenhum item com esses filtros.";
+  const fim = Math.min(inicio + POR_PAGINA, filtrados.length);
+  $("contagem").textContent = filtrados.length ? `${inicio + 1}–${fim} de ${filtrados.length.toLocaleString("pt-BR")} itens` : "";
+  $("anterior").disabled = estado.pagina === 0;
+  $("proxima").disabled = fim >= filtrados.length;
+  for (const th of document.querySelectorAll("th[data-ordem]")) {
+    const ativo = th.dataset.ordem === estado.ordem;
+    th.textContent = th.textContent.replace(/ [▲▼]$/, "") + (ativo ? (estado.sentido > 0 ? " ▲" : " ▼") : "");
+    th.setAttribute("aria-sort", ativo ? (estado.sentido > 0 ? "ascending" : "descending") : "none");
+  }
+}
+
+async function carregarCasa() {
+  const casa = casaAtual = meta.casas[$("casa").value];
+  $("aviso").hidden = false; $("aviso").textContent = "Carregando…"; $("linhas").innerHTML = "";
+  const dados = await json("dados/" + casa.arquivo);
+  grupos = agrupar(dados.linhas);
+  $("atualizado").textContent = `Dados coletados ${haQuanto(dados.coletado_em)} · ${new Date(dados.coletado_em).toLocaleString("pt-BR")}`;
+  porItem.clear();
+  for (const g of grupos) porItem.set(g.id, g);
+  estado.abertos.clear();
+  filtrar();
+  await mostrarModo();
+}
+
+async function iniciar() {
+  [meta, catalogo, bonusJogo] = await Promise.all([json("dados/meta.json"), json("dados/itens.json"),
+    json("dados/bonus.json").catch(() => ({bonus: {}, pontos: {}}))]);
+  $("casa").innerHTML = meta.casas.map((c, i) =>
+    `<option value="${i}">${c.id}${c.id === meta.casa_padrao ? " (padrão)" : ""} · ${esc(c.nome)}</option>`).join("");
+  const padrao = meta.casas.findIndex(c => c.id === meta.casa_padrao);
+  $("casa").value = Math.max(padrao, 0);
+  await carregarCasa();
+}
+
+$("casa").onchange = () => carregarCasa().catch(falhou);
+$("abas").onclick = e => {
+  const b = e.target.closest("button[data-modo]");
+  if (b && b.dataset.modo !== estado.modo) trocarModo(b.dataset.modo);
+};
+$("categorias").onclick = e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.prof) {
+    prof.id = +b.dataset.prof; prof.abertos.clear(); prof.materiaisAbertos.clear();
+    montarProfissoes(); filtrarProf(); return;
+  }
+  estado.classe = b.dataset.classe === "" ? null : +b.dataset.classe;
+  estado.sub = b.dataset.sub == null ? null : +b.dataset.sub;
+  estado.slot = b.dataset.slot || null;
+  montarCategorias(); filtrar();
+};
+let espera;
+$("filtros").oninput = () => { clearTimeout(espera); espera = setTimeout(filtrar, 120); };
+$("limpar").onclick = () => { $("filtros").reset(); filtrar(); };
+for (const botao of document.querySelectorAll(".mais-filtros")) botao.onclick = () => {
+  botao.setAttribute("aria-expanded", botao.parentElement.classList.toggle("aberto"));
+};
+const aoTopo = () => { scrollTo(0, 0); for (const e of document.querySelectorAll(".rolagem, #v-prof, #v-resumo")) e.scrollTop = 0; };
+$("anterior").onclick = () => { estado.pagina--; desenhar(); aoTopo(); };
+$("proxima").onclick = () => { estado.pagina++; desenhar(); aoTopo(); };
+document.querySelector("thead").onclick = e => {
+  const th = e.target.closest("th[data-ordem]");
+  if (!th) return;
+  if (estado.ordem === th.dataset.ordem) estado.sentido *= -1;
+  else { estado.ordem = th.dataset.ordem; estado.sentido = 1; }
+  ordenar();
+};
+$("linhas").onclick = e => {
+  const periodo = e.target.closest("button[data-periodo]");
+  if (periodo) { estado.periodo = periodo.dataset.periodo; desenhar(); return; }
+  const tr = e.target.closest("tr.abre");
+  if (!tr) return;
+  const id = +tr.dataset.id;
+  estado.abertos.has(id) ? estado.abertos.delete(id) : estado.abertos.add(id);
+  desenhar();
+};
+let esperaProf;
+$("filtros-prof").oninput = () => { clearTimeout(esperaProf); esperaProf = setTimeout(filtrarProf, 120); };
+$("cab-prof").onclick = e => {
+  const th = e.target.closest("th[data-ordem]");
+  if (!th) return;
+  if (prof.ordem === th.dataset.ordem) prof.sentido *= -1;
+  else { prof.ordem = th.dataset.ordem; prof.sentido = ["nome", "categoria"].includes(prof.ordem) ? 1 : -1; }
+  filtrarProf();
+};
+$("linhas-prof").onclick = e => {
+  const periodo = e.target.closest("button[data-periodo]");
+  if (periodo) { estado.periodo = periodo.dataset.periodo; desenharProf(); return; }
+  const tr = e.target.closest("tr.abre");
+  if (!tr) return;
+  const rid = +tr.dataset.rid;
+  prof.abertos.has(rid) ? prof.abertos.delete(rid) : prof.abertos.add(rid);
+  desenharProf();
+};
+$("resumo").onclick = e => {
+  const b = e.target.closest("button[data-prof]");
+  if (!b) return;
+  prof.id = +b.dataset.prof; prof.abertos.clear(); prof.materiaisAbertos.clear();
+  trocarModo("profissoes"); aoTopo();
+};
+$("linhas-mat").onclick = e => {
+  const periodo = e.target.closest("button[data-periodo]");
+  if (periodo) { estado.periodo = periodo.dataset.periodo; desenharProf(); return; }
+  const tr = e.target.closest("tr.abre");
+  if (!tr) return;
+  const id = +tr.dataset.id;
+  prof.materiaisAbertos.has(id) ? prof.materiaisAbertos.delete(id) : prof.materiaisAbertos.add(id);
+  desenharProf();
+};
+// Passar o mouse (ou o dedo) no gráfico mostra o valor do ponto mais próximo.
+document.querySelector("main").onpointermove = e => {
+  const svg = e.target.closest(".hist svg");
+  if (!svg) return;
+  const caixa = svg.closest(".hist"), pontos = pontosAbertos.get(+caixa.dataset.id);
+  if (!pontos || !pontos.length) return;
+  const r = svg.getBoundingClientRect(), alvo = (e.clientX - r.left) / r.width * GL, x = escalaX(pontos);
+  const p = pontos.reduce((a, b) => Math.abs(x(b.t) - alvo) < Math.abs(x(a.t) - alvo) ? b : a);
+  caixa.querySelector(".leitura").innerHTML = leitura(p);
+  for (const c of caixa.querySelectorAll(".cursor")) {
+    c.setAttribute("x1", x(p.t)); c.setAttribute("x2", x(p.t)); c.setAttribute("visibility", "visible");
+  }
+};
+if (!semHover) {
+  document.querySelector("main").addEventListener("pointermove", e => {
+    const celula = e.target.closest("td.nome, td.vnome"), tr = celula && celula.closest("tr[data-id]");
+    if (!tr) { if (dicaDe != null) esconderDica(); return; }
+    const id = +tr.dataset.id, variante = tr.dataset.variante;
+    if (dicaDe === id + "|" + (variante ?? "")) { if (!$("dica").hidden) moverDica(e); return; }
+    mostrarDica(infoItem(id), e, variante);
+  });
+  document.querySelector("main").addEventListener("pointerleave", esconderDica);
+  addEventListener("scroll", esconderDica, {passive: true, capture: true});
+}
+const falhou = e => { $("aviso").hidden = false; $("aviso").textContent = "Não foi possível carregar os dados: " + e.message; };
+iniciar().catch(falhou);
+</script>
+</body>
+</html>

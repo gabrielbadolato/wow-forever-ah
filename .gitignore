@@ -1,0 +1,6 @@
+segredos/
+/dados/
+__pycache__/
+*.pyc
+site/dados/
+.pages/

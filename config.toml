@@ -1,0 +1,27 @@
+# Monitor da casa de leilões do WoW: Forever
+
+regiao = "us"
+idioma = "en_US"
+
+# Rulesets: 1 = PvP, 2 = Normal, 3 = Roleplay, 15 = Roleplay PvP
+rulesets = [2]
+
+# Só coleta casas cujo nome contenha um destes textos. Lista vazia = todas.
+filtro_casas = ["Horde"]
+
+banco = "dados/ah.sqlite"
+credenciais = "segredos/credenciais.env"
+
+# Fotos brutas guardadas por casa, para reprocessar se a API mudar de formato.
+pasta_brutos = "dados/brutos"
+brutos_por_casa = 3
+
+# Página de consulta: os JSON vão para <pasta_site>/dados a cada coleta.
+pasta_site = "site"
+casa_padrao = 113
+
+# Publicação no GitHub Pages (ramo gh-pages). Vazio = não publica.
+# Ex.: "git@github.com:usuario/repositorio.git"
+repositorio_pages = "git@github.com:gabrielbadolato/wow-forever-ah.git"
+chave_pages = "segredos/pages_deploy_key"
+pasta_pages = ".pages"
