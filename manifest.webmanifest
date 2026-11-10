@@ -1,0 +1,23 @@
+{
+  "name": "Goblinomics",
+  "short_name": "Goblinomics",
+  "description": "Preços, lucro e oportunidades da casa de leilões do WoW: Forever.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#050607",
+  "theme_color": "#1b1b1b",
+  "icons": [
+    {
+      "src": "icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
