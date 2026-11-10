@@ -29,6 +29,9 @@ python3 -m unittest discover -s tests  # testes com dados de exemplo
 
 Rulesets e casas coletadas ficam em `config.toml`.
 
+A Blizzard publica uma foto nova por hora, mas às vezes atrasa. O timer roda
+`coletar` a cada 20 minutos; sem foto nova, o comando termina sem republicar.
+
 ## Dados
 
 - `dados/ah.sqlite`: tabelas `casas`, `coletas` (uma linha por foto nova) e
