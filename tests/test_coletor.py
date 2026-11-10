@@ -107,8 +107,9 @@ class TesteColetor(unittest.TestCase):
         self.assertEqual(len(list(self.cfg.pasta_brutos.glob("*.json.gz"))), 3)
 
     def test_foto_repetida_nao_duplica(self):
-        coletor.coletar(self.cfg, self.api)
-        coletor.coletar(self.cfg, self.api)
+        self.assertEqual(coletor.coletar(self.cfg, self.api), 3)
+        # Sem foto nova a rodada devolve zero, e o comando não republica a página.
+        self.assertEqual(coletor.coletar(self.cfg, self.api), 0)
         self.assertEqual(self.consultar("SELECT count(*) FROM coletas"), [(3,)])
         # Na segunda rodada o pedido leva o Last-Modified da primeira.
         self.assertIn(("/data/wow/ruleset/2/auctions/113", "Mon, 09 Nov 2026 12:00:00 GMT"),

@@ -91,7 +91,9 @@ def coletar_casa(api, con, cfg, ruleset_id, casa_id, tipo, agora):
 
 
 def coletar(cfg, api, agora=None):
+    """Coleta todas as casas configuradas. Devolve quantas fotos novas foram gravadas."""
     con = banco.abrir(cfg.banco)
+    novas = 0
     agora = agora or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     for ruleset_id in cfg.rulesets:
         for casa_id, nome in listar_casas(api, ruleset_id, cfg.filtro_casas):
@@ -99,9 +101,11 @@ def coletar(cfg, api, agora=None):
                 banco.registrar_casa(con, ruleset_id, casa_id, nome)
             for tipo in TIPOS:
                 n = coletar_casa(api, con, cfg, ruleset_id, casa_id, tipo, agora)
+                novas += n is not None
                 estado = "sem mudança" if n is None else f"{n} anúncios"
                 print(f"ruleset {ruleset_id} casa {casa_id} ({nome}) {tipo}: {estado}")
     con.close()
+    return novas
 
 
 def sondar(cfg, api):
@@ -142,8 +146,10 @@ def main():
         exportar.exportar(cfg)
         publicar.publicar(cfg)
         return
-    if args.comando == "coletar":
-        coletar(cfg, api)
+    # O timer tenta mais vezes do que a Blizzard publica; sem foto nova não há o que republicar.
+    if args.comando == "coletar" and not coletar(cfg, api):
+        print("nenhuma foto nova: nada a publicar")
+        return
     # Itens novos aparecem a cada coleta; uma falha aqui não invalida os preços já gravados.
     bonus.baixar(cfg, forcar=args.comando == "bonus")
     try:
