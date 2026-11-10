@@ -218,16 +218,17 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
 @media (max-width: 760px) {
   body { padding: 18px 0 64px; -webkit-tap-highlight-color: transparent; }
   .janela { border-radius: 0; }
-  .barra-titulo { border-radius: 0; padding: 8px 12px 7px 62px; justify-content: flex-start; flex-wrap: wrap; }
+  .barra-titulo { border-radius: 0; padding: 6px 8px 6px 62px; justify-content: flex-start; align-items: center; flex-wrap: nowrap; }
   .emblema { left: 4px; top: -10px; width: 46px; height: 46px; }
   /* As abas viram a barra fixa do rodapé, com a escolha da casa ao lado. */
   .barra-abas { position: fixed; z-index: 5; top: auto; bottom: 0; flex-wrap: nowrap; align-items: center; gap: 6px; padding: 14px 6px 6px;
     background: linear-gradient(transparent, #050607 35%); }
-  #abas { gap: 3px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-  #abas::-webkit-scrollbar { display: none; }
-  #abas button, #abas button.ativo { flex: none; white-space: nowrap; border-top: 1px solid #000; border-radius: 6px; padding: 11px 10px; }
-  .barra-abas label { margin-left: auto; padding: 0; font-size: 0; min-width: 0; }
-  .barra-abas select { max-width: 100%; min-width: 0; width: 118px; font-size: 14px; padding: 9px 4px; }
+  #abas { gap: 3px; flex: 1; min-width: 0; }
+  #abas button, #abas button.ativo { flex: 1 1 auto; min-width: 0; white-space: nowrap; border-top: 1px solid #000; border-radius: 6px; padding: 12px 2px; font-size: 12px; }
+  /* A escolha da casa sobe para a barra de título (o script a muda de lugar), para as cinco abas caberem. */
+  .barra-titulo label { margin-left: auto; font-size: 0; min-width: 0; }
+  .barra-titulo select { max-width: 100%; min-width: 0; width: 124px; font-size: 14px; padding: 7px 4px; }
+  .barra-titulo .sub { display: none; }
   #atualizado { display: none; }
   main { grid-template-columns: minmax(0, 1fr); padding: 6px; }
   #categorias { flex-direction: row; overflow-x: auto; max-height: none; scrollbar-width: none; }
@@ -240,7 +241,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
   #filtros, #filtros-prof, #filtros-arb, #filtros-lista { align-items: stretch; padding: 8px; gap: 8px; }
   #filtros > label:first-child, #filtros-prof > label:first-child, #filtros-arb > label:first-child { flex: 1 1 60%; min-width: 0; }
   #f-nome, #p-nome { width: 100%; }
-  .mais-filtros { display: block; align-self: flex-end; padding: 9px 14px; }
+  .mais-filtros { display: block; align-self: flex-end; }
   form:not(.aberto) > .avancado { display: none; }
   /* 16px evita o zoom automático do iOS ao tocar no campo. */
   input, select { font-size: 16px; padding: 8px; }
@@ -267,6 +268,16 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
   #rodape { padding: 8px; }
   #rodape button { padding: 10px 16px; }
   .cartoes { grid-template-columns: minmax(0, 1fr); padding: 6px; }
+  /* Alvos de toque: nada clicável com menos de uns 36 px de altura. */
+  .fav { font-size: 20px; padding: 10px 8px; margin-right: -6px; }
+  input[type=checkbox] { width: 22px; height: 22px; }
+  .periodos button { padding: 8px 12px; }
+  .chips { gap: 8px; }
+  .chips button { padding: 8px 12px; font-size: 13px; }
+  button.acao { padding: 10px 16px; }
+  .hist svg text { font-size: 11px; }
+  .comparar td, .comparar th { padding: 6px 6px; }
+  #v-lista input[type=number] { width: 64px; }
   .cartao td { padding: 6px 8px; }
 }
 </style>
@@ -527,7 +538,9 @@ async function pontosDoItem(id) {
   return pontos.filter(p => p.t >= corte);
 }
 
-const GL = 640, GA = 130, GM = {e: 6, d: 6, t: 16, b: 18};
+// No celular o gráfico é desenhado quase 1:1, senão os rótulos encolhem até ficarem ilegíveis.
+const ESTREITO = matchMedia("(max-width: 760px)");
+const GL = ESTREITO.matches ? 350 : 640, GA = 130, GM = {e: 6, d: 6, t: 16, b: 18};
 function escalaX(pontos) {
   const t0 = pontos[0].t, t1 = pontos[pontos.length - 1].t;
   return t => t1 === t0 ? GL / 2 : GM.e + (t - t0) / (t1 - t0) * (GL - GM.e - GM.d);
@@ -968,6 +981,7 @@ async function abrirProfissoes() {
 // ---- Entre casas: comprar numa casa do mercado e revender em outra ----
 const outrasCasas = new Map();
 let linhasArb = [];
+const VEZES_ABSURDAS = 50;
 function casaDoMercado(casa) {
   if (!outrasCasas.has(casa.arquivo))
     outrasCasas.set(casa.arquivo, json("dados/" + casa.arquivo).then(d => ({casa,
@@ -993,7 +1007,8 @@ async function abrirArbitragem() {
       const d = destino.itens.get(id);
       if (!simples(o) || !simples(d)) continue;
       const compra = o.mercado ?? o.min, lucro = Math.round(d.min * (1 - taxa(destino.casa))) - compra;
-      if (lucro <= 0) continue;
+      // Anúncio único a preço absurdo no destino (9.999.999 de ouro por um peixe) não é oportunidade.
+      if (lucro <= 0 || d.min > compra * VEZES_ABSURDAS) continue;
       linhasArb.push({id, g: o, origem: origem.casa, destino: destino.casa, compra, venda: d.min, lucro,
         margem: lucro / compra * 100, qtd: o.qtd, anunciosLa: d.anuncios,
         vdia: horas >= HORAS_PARA_MOSTRAR ? (destino.vendas.itens[id] || 0) / horas * 24 : null});
@@ -1435,6 +1450,11 @@ if (!semHover) {
   document.querySelector("main").addEventListener("pointerleave", esconderDica);
   addEventListener("scroll", esconderDica, {passive: true, capture: true});
 }
+// No celular a escolha da casa fica na barra de título; em tela grande, ao lado das abas.
+const seletorDaCasa = $("casa").parentElement;
+const posicionarCasa = () => (ESTREITO.matches ? document.querySelector(".barra-titulo") : document.querySelector(".barra-abas")).insertBefore(seletorDaCasa, ESTREITO.matches ? null : $("atualizado"));
+ESTREITO.addEventListener("change", posicionarCasa);
+posicionarCasa();
 const falhou = e => { $("aviso").hidden = false; $("aviso").textContent = "Não foi possível carregar os dados: " + e.message; };
 iniciar().catch(falhou);
 </script>
