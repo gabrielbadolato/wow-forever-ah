@@ -35,6 +35,18 @@ class TesteResumo(unittest.TestCase):
         self.assertEqual(r.preco_mercado, (10 * 10 + 5 * 20) // 15)
         self.assertEqual(r.preco_min, 10)
 
+    def test_degraus_dao_o_custo_de_comprar_em_quantidade(self):
+        anuncios = [
+            {"item": {"id": 7}, "unit_price": 10, "quantity": 3},
+            {"item": {"id": 7}, "unit_price": 20, "quantity": 4},
+            {"item": {"id": 8}, "unit_price": 5, "quantity": 9},
+        ]
+        r = resumir(anuncios)
+        # 1 e 2 unidades a 10; 5 = três a 10 e duas a 20; tudo (7) = 30 + 80.
+        self.assertEqual(r[(7, "")].degraus, [[1, 10], [2, 20], [5, 70], [7, 110]])
+        # Preço único: comprar n custa n vezes o menor preço, não há o que guardar.
+        self.assertIsNone(r[(8, "")].degraus)
+
     def test_variantes_ficam_separadas(self):
         a = {"id": 5, "bonus_lists": [3, 1]}
         b = {"id": 5, "bonus_lists": [1, 3], "modifiers": [{"type": 9, "value": 30}]}
@@ -248,6 +260,11 @@ class TesteColetor(unittest.TestCase):
         self.assertEqual(dados["pontos"], {36: {"UNCOMMON": [14.0, 11.0, 8.0, 6.0, 4.0],
                                                 "RARE": [20.0, 17.0, 14.0, 12.0, 10.0],
                                                 "EPIC": [26.0, 23.0, 20.0, 18.0, 16.0]}})
+
+    def test_dificuldade_da_receita(self):
+        habilidades = [{"ID": "5", "TrivialSkillLineRankLow": "250", "TrivialSkillLineRankHigh": "290"},
+                       {"ID": "6", "TrivialSkillLineRankLow": "0", "TrivialSkillLineRankHigh": "0"}]
+        self.assertEqual(bonus.dificuldades(habilidades), {5: [250, 290]})
 
     def test_recarga_vem_do_feitico_ou_da_categoria(self):
         habilidades = [{"ID": "10487", "Spell": "18560"}, {"ID": "9840", "Spell": "17187"},

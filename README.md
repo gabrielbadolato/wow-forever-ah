@@ -44,6 +44,12 @@ A Blizzard publica uma foto nova por hora, mas às vezes atrasa. O timer roda
 
 `preco_mercado` é a média das 15% unidades mais baratas de cada item.
 
+A tabela `degraus` guarda, só para a foto mais recente de cada casa, quanto
+custa comprar as n unidades mais baratas de cada item (a lista de compras da
+página usa isso). Cada arquivo de casa exportado leva também a média de 7 dias
+do menor preço de cada item (`medias`) e o valor das vendas estimadas
+(`vendas.valores`), base da aba Ofertas e da aba Entre casas.
+
 O detalhe por foto (`precos`, `vendas`) só é guardado por 7 dias. A cada
 exportação, `ahforever/compactar.py` resume os dias encerrados na tabela
 `diario` (mínimo, média e vendas por item) e esvazia as fotos mais antigas,

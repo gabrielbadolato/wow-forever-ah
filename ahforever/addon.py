@@ -63,7 +63,7 @@ end
 def _dados(casa, coletado_em, linhas, vendas):
     """Dados.lua: {[item] = {menor preço, mercado, à venda, vendas por dia}}, somando as variantes."""
     itens = {}
-    for item_id, _, minimo, mercado, quantidade, _ in linhas:
+    for item_id, _, minimo, mercado, quantidade, *_ in linhas:
         atual = itens.setdefault(item_id, [None, 0, 0])
         atual[2] += quantidade
         if minimo is not None and (atual[0] is None or minimo < atual[0]):

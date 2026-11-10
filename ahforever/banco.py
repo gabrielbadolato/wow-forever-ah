@@ -1,3 +1,4 @@
+import json
 import sqlite3
 
 ESQUEMA = """
@@ -88,6 +89,17 @@ CREATE TABLE IF NOT EXISTS dias_fechados (
     PRIMARY KEY (ruleset_id, casa_id, dia)
 ) WITHOUT ROWID;
 
+-- Custo de comprar em quantidade, só da foto mais recente de cada casa (ver resumo.py).
+CREATE TABLE IF NOT EXISTS degraus (
+    ruleset_id INTEGER NOT NULL,
+    casa_id    INTEGER NOT NULL,
+    tipo       TEXT NOT NULL,
+    item_id    INTEGER NOT NULL,
+    variante   TEXT NOT NULL DEFAULT '',
+    degraus    TEXT NOT NULL,
+    PRIMARY KEY (ruleset_id, casa_id, tipo, item_id, variante)
+) WITHOUT ROWID;
+
 -- Receitas de profissão. reagentes é JSON: [[item_id, quantidade], ...].
 CREATE TABLE IF NOT EXISTS receitas (
     receita_id    INTEGER PRIMARY KEY,
@@ -156,6 +168,17 @@ def gravar_coleta(con, ruleset_id, casa_id, tipo, coletado_em, resposta, n_anunc
             ],
         )
     return cur.lastrowid
+
+
+def gravar_degraus(con, ruleset_id, casa_id, tipo, resumos):
+    """Troca os degraus da casa pelos da foto nova; os antigos não servem para nada."""
+    with con:
+        con.execute("DELETE FROM degraus WHERE ruleset_id = ? AND casa_id = ? AND tipo = ?",
+                    (ruleset_id, casa_id, tipo))
+        con.executemany(
+            "INSERT INTO degraus VALUES (?, ?, ?, ?, ?, ?)",
+            [(ruleset_id, casa_id, tipo, item_id, variante, json.dumps(r.degraus, separators=(",", ":")))
+             for (item_id, variante), r in resumos.items() if r.degraus])
 
 
 def gravar_vendas(con, coleta_id, intervalo, vendas):

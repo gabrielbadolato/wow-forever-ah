@@ -11,6 +11,8 @@ class Resumo:
     preco_mercado: int | None
     quantidade: int
     n_anuncios: int
+    # [[n, custo de comprar as n unidades mais baratas], ...]; None se o preço é um só.
+    degraus: list | None = None
 
 
 def chave_variante(item):
@@ -49,6 +51,26 @@ def _preco_mercado(precos):
     return soma // usadas
 
 
+# Quantidades em que o custo acumulado é guardado; entre elas a página interpola.
+PASSOS = (1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000)
+
+
+def _degraus(precos):
+    """Quanto custa comprar as n unidades mais baratas. `precos` é [(preço, qtd)] ordenado."""
+    if not precos or precos[0][0] == precos[-1][0]:
+        return None
+    total = sum(q for _, q in precos)
+    alvos = [n for n in PASSOS if n < total] + [total]
+    saida, custo, usadas, i = [], 0, 0, 0
+    for preco, quantidade in precos:
+        while i < len(alvos) and alvos[i] <= usadas + quantidade:
+            saida.append([alvos[i], custo + preco * (alvos[i] - usadas)])
+            i += 1
+        custo += preco * quantidade
+        usadas += quantidade
+    return saida
+
+
 def resumir(anuncios):
     """Agrupa anúncios por (item_id, variante) e devolve {chave: Resumo}."""
     grupos = {}
@@ -71,5 +93,6 @@ def resumir(anuncios):
             preco_mercado=_preco_mercado(precos) if precos else None,
             quantidade=sum(int(a.get("quantity", 1)) for a in lista),
             n_anuncios=len(lista),
+            degraus=_degraus(precos),
         )
     return resumos

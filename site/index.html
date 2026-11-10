@@ -84,7 +84,7 @@ main.sem-lateral #categorias { display: none; }
 #categorias .grupo { padding: 10px 6px 3px; font: 11px Arial, sans-serif; text-transform: uppercase; letter-spacing: .6px; color: var(--fraco); }
 
 /* ---- Barra de busca ---- */
-#filtros, #filtros-prof, #filtros-arb, #filtros-lista { flex: none; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: end; padding: 9px 12px;
+#filtros, #filtros-prof, #filtros-arb, #filtros-lista, #filtros-ofertas { flex: none; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: end; padding: 9px 12px;
   background: linear-gradient(#262626, #1a1a1a); border-bottom: 1px solid #000; box-shadow: inset 0 -1px 0 var(--metal-escuro); }
 label { display: flex; flex-direction: column; gap: 3px; font: 12px var(--titulo); color: var(--ouro); }
 input, select { background: #000; color: #fff; border: 1px solid #5a5a5a; border-radius: 6px; padding: 5px 8px;
@@ -206,14 +206,15 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
 .t-v { color: #1eff00; } .t-a { color: #ffd100; } .t-c { color: #9d9d9d; } .t-z { color: #87abff; }
 
 /* .sd só aparece em tela grande; .sm só no celular. */
-.sm, .mais-filtros { display: none; }
+.sm, .mais-filtros, .curto { display: none; }
+.dif-0 { color: #ff8040; } .dif-1 { color: #ffff00; } .dif-2 { color: #40c040; } .dif-3 { color: #808080; }
 /* Em tela grande a janela tem altura fixa e a lista rola por dentro, como no jogo. */
 @media (min-width: 761px) and (min-height: 560px) {
   body { height: 100vh; overflow: hidden; }
   .janela { height: 100%; }
   #v-leiloes .rolagem { flex: 1; overflow: auto; }
-  #v-prof, #v-resumo, #v-arb, #v-lista { overflow-y: auto; }
-  #v-prof > *, #v-resumo > *, #v-arb > *, #v-lista > *, #bloco-mat > *, #bloco-rec > * { flex: none; }
+  #v-prof, #v-resumo, #v-arb, #v-lista, #v-ofertas { overflow-y: auto; }
+  #v-prof > *, #v-resumo > *, #v-arb > *, #v-lista > *, #v-ofertas > *, #bloco-mat > *, #bloco-rec > * { flex: none; }
 }
 @media (max-width: 760px) {
   body { padding: 18px 0 64px; -webkit-tap-highlight-color: transparent; }
@@ -238,7 +239,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
   #categorias .grupo { align-self: center; padding: 0 6px; flex: none; }
 
   /* Filtros: só a busca fica à vista; o resto abre pelo botão. */
-  #filtros, #filtros-prof, #filtros-arb, #filtros-lista { align-items: stretch; padding: 8px; gap: 8px; }
+  #filtros, #filtros-prof, #filtros-arb, #filtros-lista, #filtros-ofertas { align-items: stretch; padding: 8px; gap: 8px; }
   #filtros > label:first-child, #filtros-prof > label:first-child, #filtros-arb > label:first-child { flex: 1 1 60%; min-width: 0; }
   #f-nome, #p-nome { width: 100%; }
   .mais-filtros { display: block; align-self: flex-end; }
@@ -248,7 +249,8 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
   input[type=number] { width: 76px; }
 
   /* Tabelas cabem na largura: as colunas secundárias somem e viram uma linha miúda sob o nome. */
-  .sd { display: none !important; }
+  .sd, .longo { display: none !important; }
+  .curto { display: inline; }
   .sm { display: block; font: 11px Arial, sans-serif; color: var(--fraco); }
   table { min-width: 0; }
   th[data-ordem="nome"], #bloco-mat th:first-child { width: 100%; }
@@ -294,7 +296,8 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
       <button type="button" data-modo="leiloes" class="ativo">Leilões</button>
       <button type="button" data-modo="profissoes">Profissões</button>
       <button type="button" data-modo="resumo">Resumo</button>
-      <button type="button" data-modo="arbitragem">Entre casas</button>
+      <button type="button" data-modo="ofertas">Ofertas</button>
+      <button type="button" data-modo="arbitragem"><span class="longo">Entre casas</span><span class="curto">Casas</span></button>
       <button type="button" data-modo="lista">Lista</button>
     </nav>
     <label>Casa <select id="casa"></select></label>
@@ -326,6 +329,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
           <th data-ordem="nivel" class="num sd">Nível</th>
           <th data-ordem="req" class="num sd">Req.</th>
           <th data-ordem="qtd" class="num">Disponível</th>
+          <th data-ordem="tend" class="num sd" title="Menor preço de agora contra a média dos menores preços dos últimos 7 dias. Verde: mais barato que a média">7 dias</th>
           <th data-ordem="vdia" class="num sd" title="Vendas estimadas por dia, comparando uma coleta com a seguinte">Vendas/dia</th>
           <th data-ordem="mercado" class="num sd">Mercado (un.)</th>
         </tr></thead>
@@ -347,6 +351,8 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
       <label class="avancado">Mín. à venda <input id="p-qtd" type="number" min="0" value="1"></label>
       <label class="caixa avancado" title="Usa o custo de fabricar o material (barras, tecidos, peças) quando sai mais barato que comprar">Materiais intermediários <span class="par"><input id="p-cadeia" type="checkbox" checked> fabricar se compensar</span></label>
       <label class="caixa avancado">Sem preço completo <span class="par"><input id="p-incompletas" type="checkbox"> mostrar</span></label>
+      <label class="avancado" title="Sua habilidade nesta profissão. A receita ganha a cor do jogo: laranja sempre dá ponto, amarela quase sempre, verde raramente, cinza nunca. O jogo não informa em que nível cada receita é aprendida, então uma laranja pode ainda não estar ao seu alcance.">Minha habilidade <input id="p-skill" type="number" min="1" max="450" placeholder="1–300"></label>
+      <label class="caixa avancado">Subir habilidade <span class="par"><input id="p-ponto" type="checkbox"> só as que dão ponto</span></label>
     </form>
     <div id="bloco-mat" hidden>
       <h2 class="titulo-bloco">Materiais brutos</h2>
@@ -392,6 +398,22 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
     <div id="minhas" class="chips"></div>
     <div id="resumo" class="cartoes"></div>
   </section>
+  <section class="painel" id="v-ofertas" hidden>
+    <form id="filtros-ofertas" onsubmit="return false">
+      <label>Item <input id="o-nome" type="search" placeholder="Buscar item" autocomplete="off"></label>
+      <label>Tipo <select id="o-tipo"><option value="media">Abaixo da média de 7 dias</option><option value="npc">Abaixo do que o NPC paga</option></select></label>
+      <label id="o-rotulo-desc">Desconto mínimo (%) <input id="o-desc" type="number" step="any" value="25" style="width:70px"></label>
+      <label class="caixa" id="o-rotulo-gira" title="Pelo menos uma venda estimada por dia nesta casa">Giro <span class="par"><input id="o-gira" type="checkbox" checked> só o que vende</span></label>
+    </form>
+    <p class="nota" id="nota-ofertas"></p>
+    <div class="rolagem">
+      <table>
+        <thead><tr id="cab-ofertas"></tr></thead>
+        <tbody id="linhas-ofertas"></tbody>
+      </table>
+    </div>
+    <div id="aviso-ofertas" class="aviso" hidden></div>
+  </section>
   <section class="painel" id="v-arb" hidden>
     <form id="filtros-arb" onsubmit="return false">
       <label>Item <input id="a-nome" type="search" placeholder="Buscar item" autocomplete="off"></label>
@@ -405,7 +427,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
     <div class="rolagem">
       <table>
         <thead><tr><th>Item</th><th class="sd">Comprar em</th><th class="num">Preço</th><th class="sd">Vender em</th>
-          <th class="num sd">Preço lá</th><th class="num" title="Preço lá, menos a taxa de lá, menos o preço de compra">Lucro (un.)</th>
+          <th class="num sd" title="O menor anúncio do destino ou, se for menor, o preço médio a que o item tem vendido lá">Preço lá</th><th class="num" title="Preço lá, menos a taxa de lá, menos o preço de compra">Lucro (un.)</th>
           <th class="num sd">Margem</th><th class="num sd" title="Unidades à venda na casa de origem">Disponível</th>
           <th class="num sd" title="Vendas estimadas por dia na casa de destino">Vendas/dia lá</th></tr></thead>
         <tbody id="linhas-arb"></tbody>
@@ -463,7 +485,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", 
 
 let meta, catalogo, bonusJogo, grupos = [], filtrados = [];
 // Preferências de quem usa, guardadas só neste navegador.
-const prefs = {profissoes: [], favoritos: [], lista: {}};
+const prefs = {profissoes: [], favoritos: [], lista: {}, habilidade: {}, modo: null, casa: null};
 try { Object.assign(prefs, JSON.parse(localStorage.getItem("ah-forever") || "{}")); } catch {}
 const guardarPrefs = () => { try { localStorage.setItem("ah-forever", JSON.stringify(prefs)); } catch {} };
 const alternar = (lista, id) => { const i = lista.indexOf(id); i < 0 ? lista.push(id) : lista.splice(i, 1); guardarPrefs(); };
@@ -637,8 +659,9 @@ function celulaVariante(g, v) {
 function caixaHistorico(id) {
   const botoes = Object.entries(PERIODOS).map(([k, nome]) =>
     `<button type="button" data-periodo="${k}" class="${k === estado.periodo ? "ativo" : ""}">${nome}</button>`).join(" ");
-  return `<tr class="detalhe"><td colspan="7">${semHover ? `<div class="atributos" data-id="${id}"></div>` : ""}${histHtml(id, botoes)}
-    <div class="comparar" data-id="${id}">${estado.comparar.has(id) ? '<div class="vazio">Carregando…</div>' : `<button class="acao" type="button" data-comparar="${id}">Comparar com as outras casas</button>`}</div></td></tr>`;
+  return `<tr class="detalhe"><td colspan="8">${semHover ? `<div class="atributos" data-id="${id}"></div>` : ""}${histHtml(id, botoes)}
+    <div class="comparar" data-id="${id}">${estado.comparar.has(id) ? '<div class="vazio">Carregando…</div>' : `<button class="acao" type="button" data-comparar="${id}">Comparar com as outras casas</button>`}
+      <button class="acao" type="button" data-link="${id}" title="Copia um endereço que abre a página direto neste item">Copiar link</button></div></td></tr>`;
 }
 function histHtml(id, botoes) {
   botoes ??= Object.entries(PERIODOS).map(([k, nome]) =>
@@ -769,9 +792,32 @@ function urlDoIcone(i) {
     ? `https://wow.zamimg.com/images/wow/icons/medium/${esc(i.icone)}.jpg`
     : `https://render.worldofwarcraft.com/${esc(i.fonte)}/icons/56/${esc(i.icone)}.jpg`;
 }
+const pct = v => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(Math.round(v)).toLocaleString("pt-BR") + "%";
+// Preço médio por unidade a que o item vendeu na casa, pelas vendas estimadas; null sem vendas.
+const vendeA = (vendas, id) => vendas.itens[id] > 0 && vendas.valores?.[id] ? Math.round(vendas.valores[id] / vendas.itens[id]) : null;
+// Custo de comprar q unidades no leilão, subindo pelos anúncios do mais barato ao mais caro.
+function custoNoLeilao(g, q) {
+  const degraus = g.variantes.length === 1 ? g.variantes[0].degraus : null;
+  if (!degraus) return (g.mercado ?? g.min) * q;
+  let n0 = 0, c0 = 0;
+  for (const [n, c] of degraus) {
+    if (q <= n) return Math.round(c0 + (q - n0) * (c - c0) / (n - n0));
+    [n0, c0] = [n, c];
+  }
+  // Mais do que há à venda: o que falta sai, na melhor das hipóteses, pelo preço das últimas.
+  const [na, ca] = degraus[degraus.length - 2] || [0, 0];
+  return Math.round(c0 + (q - n0) * (c0 - ca) / (n0 - na));
+}
 const moedaOuTraco = v => v == null ? "–" : (v < 0 ? "−" : "") + moeda(Math.abs(v));
 
 // Horas de recarga da receita (transmutações, Mooncloth): não dá para fabricar à vontade.
+// Cor da receita para a habilidade informada, como no jogo: 0 laranja, 1 amarela, 2 verde, 3 cinza.
+const CORES_DIF = ["laranja", "amarela", "verde", "cinza"];
+function dificuldade(rid, habilidade) {
+  const d = bonusJogo.dificuldades?.[rid];
+  if (!d || !habilidade) return null;
+  return habilidade < d[0] ? 0 : habilidade < (d[0] + d[1]) / 2 ? 1 : habilidade < d[1] ? 2 : 3;
+}
 const recarga = rid => bonusJogo.recargas?.[rid] || 0;
 const textoRecarga = h => h >= 48 ? `${Math.round(h / 24)} dias` : h >= 1 ? `${Math.round(h)} h` : `${Math.round(h * 60)} min`;
 let receitasDoItem = new Map(), custos = new Map();
@@ -828,6 +874,7 @@ function calcularReceitas() {
 }
 
 function montarProfissoes() {
+  $("p-skill").value = prefs.habilidade[prof.id] ?? "";
   const lucrativas = new Map();
   for (const l of todasReceitas) if (l.lucro > 0) lucrativas.set(l.profId, (lucrativas.get(l.profId) || 0) + 1);
   $("categorias").innerHTML = Object.entries(receitas.profissoes).sort((a, b) => a[1].localeCompare(b[1])).map(([id, nome]) =>
@@ -852,7 +899,8 @@ function desenharMateriais() {
       const lucroDia = lucro != null && g.vdia != null ? Math.round(lucro * g.vdia) : null;
       h += `<tr class="item abre" data-id="${g.id}" aria-expanded="${aberto}">
         <td class="nome">${iconeHtml(g)}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
-          <span class="sm">Menor preço ${moeda(g.min)}${g.npc ? ` · NPC paga ${moeda(g.npc)}` : ""}${g.vdia != null ? ` · vende ~${porDia(g.vdia)}/dia` : ""}</span></span></td>
+          <span class="sm">Menor preço ${moeda(g.min)}</span>
+          <span class="sm">${[g.npc ? `NPC paga ${moeda(g.npc)}` : "", g.vdia != null ? `vende ~${porDia(g.vdia)}/dia` : ""].filter(Boolean).join(" · ")}</span></span></td>
         <td class="num sd">${moeda(g.min)}</td><td class="num sd">${moeda(g.mercado)}</td>
         <td class="num ${npcMelhor ? "neg" : "pos"}">${moedaOuTraco(lucro)}</td><td class="num sd">${moedaOuTraco(g.npc)}</td>
         <td class="num">${g.qtd.toLocaleString("pt-BR")}</td>
@@ -865,8 +913,9 @@ function desenharMateriais() {
 
 function filtrarProf() {
   const nome = $("p-nome").value.trim().toLowerCase(), lucroMin = num("p-lucro"), qtdMin = num("p-qtd") ?? 0;
-  const incompletas = $("p-incompletas").checked;
+  const incompletas = $("p-incompletas").checked, habilidade = prefs.habilidade[prof.id], soPonto = $("p-ponto").checked && habilidade;
   linhasProf = todasReceitas.filter(l => l.profId === prof.id &&
+    (!soPonto || (dificuldade(l.rid, habilidade) ?? 3) < 3) &&
     (!nome || l.busca.includes(nome)) &&
     (incompletas || l.lucro != null) &&
     (incompletas && l.lucro == null || l.qtd >= qtdMin) &&
@@ -891,10 +940,12 @@ function desenharProf() {
   let h = "";
   for (const l of linhasProf) {
     const i = infoItem(l.item), aberto = prof.abertos.has(l.rid), sinal = l.lucro == null ? "" : l.lucro >= 0 ? "pos" : "neg";
+    const dif = dificuldade(l.rid, prefs.habilidade[prof.id]), faixa = bonusJogo.dificuldades?.[l.rid];
     const margem = l.margem == null ? "–" : Math.round(l.margem).toLocaleString("pt-BR") + "%";
     h += `<tr class="item abre" data-id="${l.item}" data-rid="${l.rid}" aria-expanded="${aberto}">
       <td class="nome">${iconeHtml(i)}<span><span class="q-${i.qualidade}">${esc(l.nome)}</span>
         ${l.feitos !== 1 ? `<span class="variantes">faz ${l.feitos} por vez</span>` : ""}
+        ${dif != null ? `<span class="variantes dif-${dif}" title="Fica amarela com ${faixa[0]} de habilidade e cinza com ${faixa[1]}">${CORES_DIF[dif]}</span>` : ""}
         ${l.recarga ? `<span class="variantes" title="Só dá para fabricar uma vez a cada ${textoRecarga(l.recarga)}">recarga ${textoRecarga(l.recarga)}</span>` : ""}
         <span class="sm">${esc(l.categoria)}${margem === "–" ? "" : ` · margem ${margem}`}${l.vdia != null ? ` · vende ~${porDia(l.vdia)}/dia` : ""}</span></span><button type="button" class="fav mais ${prefs.lista[l.rid] ? "ativo" : ""}" data-lista="${l.rid}" title="${prefs.lista[l.rid] ? "Tirar da lista de compras" : "Pôr na lista de compras"}" aria-label="Lista de compras" aria-pressed="${!!prefs.lista[l.rid]}">${prefs.lista[l.rid] ? "✓" : "＋"}</button></td>
       <td class="sd">${esc(l.categoria)}</td>
@@ -911,6 +962,7 @@ function desenharProf() {
         <td class="num">${moedaOuTraco(p.preco == null ? null : p.preco * p.q)}</td><td class="fonte">${p.fonte}</td></tr>${subMateriais(p)}`;
     }).join("");
     h += `<tr class="detalhe"><td colspan="9"><div class="sm" style="margin-bottom:6px">Materiais ${moedaOuTraco(l.custo)} · venda líquida ${moedaOuTraco(l.bruto)}${l.lucroDia != null ? ` · lucro/dia ${moedaOuTraco(l.lucroDia)}` : ""}</div>
+      ${faixa ? `<div class="rotulo" style="margin:0 0 6px">Dá ponto de habilidade até ${faixa[1]} (amarela a partir de ${faixa[0]})</div>` : ""}
       <table class="reagentes">${materiais}</table>${semHover ? `<div class="atributos" data-id="${l.item}"></div>` : ""}${histHtml(l.item)}</td></tr>`;
   }
   $("linhas-prof").innerHTML = h;
@@ -978,6 +1030,52 @@ async function abrirProfissoes() {
   calcularReceitas(); montarProfissoes(); filtrarProf();
 }
 
+// ---- Ofertas: o que está barato agora nesta casa ----
+function desenharOfertas() {
+  const tipo = $("o-tipo").value, nome = $("o-nome").value.trim().toLowerCase();
+  const descMin = num("o-desc") ?? 0, gira = $("o-gira").checked, corte = corteDaCasa();
+  $("o-rotulo-desc").hidden = $("o-rotulo-gira").hidden = tipo === "npc";
+  let linhas, cabecalho;
+  if (tipo === "npc") {
+    $("nota-ofertas").textContent = "Itens anunciados por menos do que um vendedor NPC paga: comprar e vender ao NPC dá lucro na hora. " +
+      "O preço de NPC vem do cadastro do item e não foi conferido um a um no Forever: confira no tooltip do jogo antes de comprar muito.";
+    cabecalho = `<th>Item</th><th class="num">Preço</th><th class="num sd">NPC paga</th><th class="num sd" title="Unidades à venda abaixo do preço de NPC">Unidades</th><th class="num" title="NPC paga menos o que você gasta, somando todas as unidades">Lucro total</th>`;
+    linhas = grupos.filter(g => g.npc && g.min != null && g.min < g.npc && (!nome || g.busca.includes(nome))).map(g => {
+      // Em cada variante, compra-se até o ponto em que a próxima unidade já custa mais do que o NPC paga.
+      let unidades = 0, lucro = 0;
+      for (const v of g.variantes) {
+        if (v.min == null || v.min >= g.npc) continue;
+        let melhor = [v.degraus ? 1 : v.qtd, (g.npc - v.min) * (v.degraus ? 1 : v.qtd)];
+        for (const [n, custo] of v.degraus || []) if (n * g.npc - custo > melhor[1]) melhor = [n, n * g.npc - custo];
+        unidades += melhor[0]; lucro += melhor[1];
+      }
+      return {g, unidades, lucro};
+    }).sort((a, b) => b.lucro - a.lucro).map(({g, unidades, lucro}) => `<tr class="item" data-id="${g.id}">
+      <td class="nome">${iconeHtml(g)}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
+        <span class="sm">NPC paga ${moeda(g.npc)} · ${unidades.toLocaleString("pt-BR")} un.</span></span></td>
+      <td class="num">${moeda(g.min)}</td><td class="num sd">${moeda(g.npc)}</td>
+      <td class="num sd">${unidades.toLocaleString("pt-BR")}</td><td class="num pos">${moeda(lucro)}</td></tr>`);
+  } else {
+    $("nota-ofertas").textContent = "Itens cujo menor preço de agora está abaixo da média dos menores preços dos últimos 7 dias nesta casa. " +
+      `Revenda: o que sobra por unidade vendendo pela média, já sem a taxa da casa (${Math.round(corte * 100)}%). ` +
+      "Um preço baixo pode ser só o mercado caindo: abra o item na aba Leilões e veja o histórico. A média só existe depois de 6 coletas.";
+    cabecalho = `<th>Item</th><th class="num">Preço</th><th class="num sd">Média 7 dias</th><th class="num">Desconto</th>
+      <th class="num sd" title="Média menos a taxa da casa, menos o preço de agora">Revenda (un.)</th><th class="num sd">À venda</th><th class="num sd">Vendas/dia</th>`;
+    linhas = grupos.filter(g => g.tend != null && -g.tend >= Math.max(descMin, 1) && (!nome || g.busca.includes(nome)) &&
+      (!gira || g.vdia == null || g.vdia >= 1)).map(g => ({g, revenda: Math.round(g.media * (1 - corte)) - g.min}))
+      .sort((a, b) => b.revenda - a.revenda).map(({g, revenda}) => `<tr class="item" data-id="${g.id}">
+      <td class="nome">${iconeHtml(g)}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
+        <span class="sm">média ${moeda(g.media)} · ${g.qtd.toLocaleString("pt-BR")} à venda${g.vdia != null ? ` · vende ~${porDia(g.vdia)}/dia` : ""}</span></span></td>
+      <td class="num">${moeda(g.min)}</td><td class="num sd">${moeda(g.media)}</td><td class="num pos">${pct(g.tend)}</td>
+      <td class="num sd ${revenda >= 0 ? "pos" : "neg"}">${moedaOuTraco(revenda)}</td>
+      <td class="num sd">${g.qtd.toLocaleString("pt-BR")}</td><td class="num sd">${porDia(g.vdia)}</td></tr>`);
+  }
+  $("cab-ofertas").innerHTML = cabecalho;
+  $("linhas-ofertas").innerHTML = linhas.slice(0, 200).join("");
+  $("aviso-ofertas").hidden = linhas.length > 0;
+  $("aviso-ofertas").textContent = "Nenhuma oferta com esses filtros.";
+}
+
 // ---- Entre casas: comprar numa casa do mercado e revender em outra ----
 const outrasCasas = new Map();
 let linhasArb = [];
@@ -996,7 +1094,7 @@ async function abrirArbitragem() {
   const outras = await Promise.all(meta.casas.filter(c => c.grupo === aqui.casa.grupo && c !== aqui.casa).map(casaDoMercado));
   if (estado.modo !== "arbitragem" || casaAtual !== aqui.casa) return;
   $("nota-arb").textContent = `Compra em ${rotulo(aqui.casa)} para revender nas outras casas do Mercado ${aqui.casa.grupo}, e o caminho inverso. ` +
-    "Compra pelo preço de mercado da origem, venda pelo menor preço do destino menos a taxa de lá (5%; 15% na neutra). " +
+    "Compra pelo preço de mercado da origem; venda pelo menor anúncio do destino ou, se for menor, pelo preço médio a que o item tem vendido lá, menos a taxa de lá (5%; 15% na neutra). " +
     "Só itens sem variantes. Quais casas formam um mercado é dedução, não dado da Blizzard: confira um preço no jogo antes de confiar.";
   // Variantes (sufixos) têm preços que não se comparam entre si.
   const simples = g => g && g.min != null && g.variantes.length === 1 && g.variantes[0].variante === "";
@@ -1006,10 +1104,12 @@ async function abrirArbitragem() {
     for (const [id, o] of origem.itens) {
       const d = destino.itens.get(id);
       if (!simples(o) || !simples(d)) continue;
-      const compra = o.mercado ?? o.min, lucro = Math.round(d.min * (1 - taxa(destino.casa))) - compra;
+      // Vende-se pelo menor anúncio de lá ou, se for menos, pelo preço a que o item tem saído lá.
+      const venda = Math.min(d.min, vendeA(destino.vendas, id) ?? Infinity);
+      const compra = o.mercado ?? o.min, lucro = Math.round(venda * (1 - taxa(destino.casa))) - compra;
       // Anúncio único a preço absurdo no destino (9.999.999 de ouro por um peixe) não é oportunidade.
-      if (lucro <= 0 || d.min > compra * VEZES_ABSURDAS) continue;
-      linhasArb.push({id, g: o, origem: origem.casa, destino: destino.casa, compra, venda: d.min, lucro,
+      if (lucro <= 0 || venda > compra * VEZES_ABSURDAS) continue;
+      linhasArb.push({id, g: o, origem: origem.casa, destino: destino.casa, compra, venda, lucro,
         margem: lucro / compra * 100, qtd: o.qtd, anunciosLa: d.anuncios,
         vdia: horas >= HORAS_PARA_MOSTRAR ? (destino.vendas.itens[id] || 0) / horas * 24 : null});
     }
@@ -1068,19 +1168,25 @@ function desenharLista() {
       <td class="num ${sinal}">${moedaOuTraco(l.lucro == null ? null : l.lucro * vezes)}</td>
       <td><button type="button" class="fav" data-tirar="${l.rid}" title="Tirar da lista" aria-label="Tirar da lista">✕</button></td></tr>`;
   }).join("");
-  const itens = [...comprar].map(([id, p]) => ({id, i: infoItem(id), ...p, q: Math.ceil(p.q - 1e-9)})).sort((a, b) => a.i.nome.localeCompare(b.i.nome));
+  const itens = [...comprar].map(([id, p]) => {
+    const q = Math.ceil(p.q - 1e-9), g = porItem.get(id);
+    // No leilão, o total sobe pelos anúncios: as últimas unidades saem mais caras que as primeiras.
+    const total = p.preco == null ? null : p.fonte === "leilão" && g ? custoNoLeilao(g, q) : p.preco * q;
+    return {id, i: infoItem(id), ...p, q, total, preco: total == null ? null : Math.round(total / q)};
+  }).sort((a, b) => a.i.nome.localeCompare(b.i.nome));
+  if (completo) custo = itens.reduce((soma, c) => soma + c.total, 0);
   $("linhas-compras").innerHTML = itens.map(c => {
     const aVenda = porItem.get(c.id)?.qtd ?? 0, falta = c.fonte === "leilão" && aVenda < c.q;
     return `<tr class="item" data-id="${c.id}"><td class="nome">${iconeHtml(c.i)}<span><span class="q-${c.i.qualidade}">${esc(c.i.nome)}</span>
         <span class="sm">${c.fonte} · ${moedaOuTraco(c.preco)} cada${falta ? ` · só ${aVenda.toLocaleString("pt-BR")} à venda` : ""}</span></span></td>
       <td class="num">${c.q.toLocaleString("pt-BR")}</td><td class="num sd">${moedaOuTraco(c.preco)}</td>
-      <td class="num">${moedaOuTraco(c.preco == null ? null : c.preco * c.q)}</td><td class="sd">${c.fonte}</td>
+      <td class="num">${moedaOuTraco(c.total)}</td><td class="sd">${c.fonte}</td>
       <td class="num sd ${falta ? "neg" : ""}">${c.fonte === "NPC" ? "–" : aVenda.toLocaleString("pt-BR")}</td></tr>`;
   }).join("");
   const intermediarios = [...fabricar].map(([id, q]) => `${Math.ceil(q - 1e-9).toLocaleString("pt-BR")} × ${infoItem(id).nome}`);
   $("nota-lista").innerHTML = `Materiais ${completo ? moeda(custo) : "sem preço completo"} · venda líquida ${moeda(bruto)}` +
     (completo ? ` · lucro <span class="${bruto - custo >= 0 ? "pos" : "neg"}">${moedaOuTraco(bruto - custo)}</span>` : "") +
-    ` · preços de ${esc(rotulo(casaAtual))}, pelo preço de mercado (comprar muito de uma vez sai mais caro).` +
+    ` · preços de ${esc(rotulo(casaAtual))}; o total de cada material é o custo de comprar essa quantidade agora, do anúncio mais barato ao mais caro.` +
     (intermediarios.length ? `<br>Fabricar no caminho, por sair mais barato que comprar: ${esc(intermediarios.join(", "))}.` : "");
   textoLista = itens.map(c => `${c.q} x ${c.i.nome}${c.fonte === "NPC" ? " (NPC)" : ""}`).join("\n");
 }
@@ -1099,14 +1205,17 @@ async function mostrarModo() {
   $("v-resumo").hidden = modo !== "resumo";
   $("v-arb").hidden = modo !== "arbitragem";
   $("v-lista").hidden = modo !== "lista";
-  document.querySelector("main").classList.toggle("sem-lateral", ["resumo", "arbitragem", "lista"].includes(modo));
+  $("v-ofertas").hidden = modo !== "ofertas";
+  prefs.modo = modo; guardarPrefs();
+  document.querySelector("main").classList.toggle("sem-lateral", ["resumo", "arbitragem", "lista", "ofertas"].includes(modo));
   for (const b of document.querySelectorAll("#abas button")) b.classList.toggle("ativo", b.dataset.modo === modo);
-  for (const id of ["linhas", "linhas-prof", "linhas-mat", "resumo", "linhas-arb", "linhas-lista", "linhas-compras"]) $(id).innerHTML = "";
+  for (const id of ["linhas", "linhas-prof", "linhas-mat", "resumo", "linhas-arb", "linhas-lista", "linhas-compras", "linhas-ofertas"]) $(id).innerHTML = "";
   esconderDica();
   if (modo === "profissoes") await abrirProfissoes();
   else if (modo === "resumo") await abrirResumo();
   else if (modo === "arbitragem") await abrirArbitragem();
   else if (modo === "lista") await abrirLista();
+  else if (modo === "ofertas") desenharOfertas();
   else { montarCategorias(); desenhar(); }
 }
 function trocarModo(modo) { estado.modo = modo; mostrarModo().catch(falhou); }
@@ -1122,7 +1231,7 @@ function haQuanto(iso) {
 // Junta as variantes do mesmo item numa linha só.
 function agrupar(linhas) {
   const porItem = new Map();
-  for (const [id, variante, min, mercado, qtd, anuncios] of linhas) {
+  for (const [id, variante, min, mercado, qtd, anuncios, degraus] of linhas) {
     let g = porItem.get(id);
     if (!g) {
       const i = catalogo.itens[id];
@@ -1138,7 +1247,9 @@ function agrupar(linhas) {
     // Só os bônus distinguem variantes; os modificadores (ex.: m28) não mudam o item.
     const chave = variante.split(";").filter(parte => parte[0] === "b").join(";");
     let v = g.variantes.find(x => x.variante === chave);
-    if (!v) g.variantes.push(v = {variante: chave, min: null, mercado: null, qtd: 0, anuncios: 0});
+    // Os degraus (custo de comprar n unidades) só valem se a variante veio numa linha só.
+    if (!v) g.variantes.push(v = {variante: chave, min: null, mercado: null, qtd: 0, anuncios: 0, degraus});
+    else v.degraus = null;
     v.qtd += qtd; v.anuncios += anuncios;
     if (min != null && (v.min == null || min < v.min)) { v.min = min; v.mercado = mercado; }
     g.qtd += qtd; g.anuncios += anuncios;
@@ -1249,16 +1360,17 @@ function desenhar() {
       <td class="nome">${icone}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
         ${varias ? `<span class="variantes">${g.variantes.length} variantes</span>` : ""}
         <span class="sm">${[g.nivel != null ? `Nível ${g.nivel}` : "", g.req ? `requer ${g.req}` : "",
-          g.vdia != null ? `vende ~${porDia(g.vdia)}/dia` : ""].filter(Boolean).join(" · ")}</span></span><button type="button" class="fav ${prefs.favoritos.includes(g.id) ? "ativo" : ""}" data-fav="${g.id}" title="Favorito" aria-label="Favorito" aria-pressed="${prefs.favoritos.includes(g.id)}">★</button></td>
+          g.vdia != null ? `vende ~${porDia(g.vdia)}/dia` : "", g.tend != null && Math.abs(g.tend) >= 5 ? `${pct(g.tend)} na semana` : ""].filter(Boolean).join(" · ")}</span></span><button type="button" class="fav ${prefs.favoritos.includes(g.id) ? "ativo" : ""}" data-fav="${g.id}" title="Favorito" aria-label="Favorito" aria-pressed="${prefs.favoritos.includes(g.id)}">★</button></td>
       <td class="num sd">${g.nivel ?? "–"}</td><td class="num sd">${g.req || "–"}</td>
       <td class="num">${g.qtd.toLocaleString("pt-BR")}</td>
+      <td class="num sd ${g.tend == null || Math.abs(g.tend) < 5 ? "" : g.tend < 0 ? "pos" : "neg"}">${pct(g.tend)}</td>
       <td class="num sd">${porDia(g.vdia)}</td>
       <td class="num sd">${moeda(g.mercado)}</td></tr>`;
     if (aberto) h += caixaHistorico(g.id);
     if (varias && aberto)
       for (const v of [...g.variantes].sort((a, b) => (a.min ?? Infinity) - (b.min ?? Infinity)))
         h += `<tr class="variante" data-id="${g.id}" data-variante="${esc(v.variante)}"><td class="num">${moeda(v.min)}</td>
-          ${celulaVariante(g, v)}<td class="num">${v.qtd.toLocaleString("pt-BR")}</td><td class="sd"></td><td class="num sd">${moeda(v.mercado)}</td></tr>`;
+          ${celulaVariante(g, v)}<td class="num">${v.qtd.toLocaleString("pt-BR")}</td><td class="sd"></td><td class="sd"></td><td class="num sd">${moeda(v.mercado)}</td></tr>`;
   }
   $("linhas").innerHTML = h;
   pontosAbertos.clear();
@@ -1288,7 +1400,13 @@ async function carregarCasa() {
   grupos = agrupar(dados.linhas);
   vendasCasa = dados.vendas || {horas: 0, itens: {}};
   const temVendas = vendasCasa.horas >= HORAS_PARA_MOSTRAR;
-  for (const g of grupos) g.vdia = temVendas ? (vendasCasa.itens[g.id] || 0) / vendasCasa.horas * 24 : null;
+  for (const g of grupos) {
+    g.vdia = temVendas ? (vendasCasa.itens[g.id] || 0) / vendasCasa.horas * 24 : null;
+    g.media = dados.medias?.[g.id] ?? null;
+    // Variação do menor preço de agora contra a média da semana, em %.
+    g.tend = g.media && g.min != null ? (g.min / g.media - 1) * 100 : null;
+  }
+  prefs.casa = casa.id; guardarPrefs();
   if (temVendas && prof.ordem === "lucro" && !prof.ordemEscolhida) prof.ordem = "lucroDia";
   const atraso = (Date.now() - new Date(dados.coletado_em)) / 3600e3;
   $("velho").hidden = atraso < HORAS_DE_ATRASO;
@@ -1310,9 +1428,16 @@ async function iniciar() {
   const mercados = [...new Set(meta.casas.map(c => c.grupo))].sort((a, b) => a - b);
   $("casa").innerHTML = mercados.map(n => `<optgroup label="Mercado ${n}">` + meta.casas.map((c, i) => c.grupo !== n ? "" :
     `<option value="${i}">${rotulo(c)}${c.id === meta.casa_padrao ? " (padrão)" : ""}</option>`).join("") + "</optgroup>").join("");
-  const padrao = meta.casas.findIndex(c => c.id === meta.casa_padrao);
-  $("casa").value = Math.max(padrao, 0);
+  // Um link direto (#item=…&casa=…) manda; sem ele, volta-se à casa e à aba da última visita.
+  const pedido = new URLSearchParams(location.hash.slice(1)), itemPedido = +pedido.get("item") || null;
+  const indice = id => meta.casas.findIndex(c => c.id === id);
+  const escolhida = [+pedido.get("casa"), prefs.casa, meta.casa_padrao].map(indice).find(i => i >= 0);
+  $("casa").value = escolhida ?? 0;
+  if (itemPedido) estado.modo = "leiloes";
+  else if (document.querySelector(`#abas [data-modo="${prefs.modo}"]`)) estado.modo = prefs.modo;
   await carregarCasa();
+  const g = itemPedido && porItem.get(itemPedido);
+  if (g) { $("f-nome").value = g.nome; filtrar(); estado.abertos.add(g.id); desenhar(); }
 }
 
 $("casa").onchange = () => carregarCasa().catch(falhou);
@@ -1338,7 +1463,7 @@ $("limpar").onclick = () => { $("filtros").reset(); filtrar(); };
 for (const botao of document.querySelectorAll(".mais-filtros")) botao.onclick = () => {
   botao.setAttribute("aria-expanded", botao.parentElement.classList.toggle("aberto"));
 };
-const aoTopo = () => { scrollTo(0, 0); for (const e of document.querySelectorAll(".rolagem, #v-prof, #v-resumo, #v-arb, #v-lista")) e.scrollTop = 0; };
+const aoTopo = () => { scrollTo(0, 0); for (const e of document.querySelectorAll(".rolagem, #v-prof, #v-resumo, #v-arb, #v-lista, #v-ofertas")) e.scrollTop = 0; };
 $("anterior").onclick = () => { estado.pagina--; desenhar(); aoTopo(); };
 $("proxima").onclick = () => { estado.pagina++; desenhar(); aoTopo(); };
 document.querySelector("thead").onclick = e => {
@@ -1351,6 +1476,12 @@ document.querySelector("thead").onclick = e => {
 $("linhas").onclick = e => {
   const estrela = e.target.closest("[data-fav]");
   if (estrela) { alternar(prefs.favoritos, +estrela.dataset.fav); $("f-fav").checked ? filtrar() : desenhar(); return; }
+  const link = e.target.closest("[data-link]");
+  if (link) {
+    const url = `${location.origin}${location.pathname}#item=${link.dataset.link}&casa=${casaAtual.id}`;
+    navigator.clipboard.writeText(url).then(() => { link.textContent = "Link copiado"; }, () => { link.textContent = url; });
+    return;
+  }
   const comparar = e.target.closest("[data-comparar]");
   if (comparar) { estado.comparar.add(+comparar.dataset.comparar); desenhar(); return; }
   const periodo = e.target.closest("button[data-periodo]");
@@ -1383,9 +1514,12 @@ $("copiar-lista").onclick = async () => {
   catch { botao.textContent = "Não deu para copiar"; }
   setTimeout(() => { botao.textContent = "Copiar lista"; }, 1500);
 };
+let esperaOfertas;
+$("filtros-ofertas").oninput = () => { clearTimeout(esperaOfertas); esperaOfertas = setTimeout(desenharOfertas, 120); };
 let esperaArb;
 $("filtros-arb").oninput = () => { clearTimeout(esperaArb); esperaArb = setTimeout(filtrarArb, 120); };
 let esperaProf;
+$("p-skill").oninput = () => { const v = num("p-skill"); v ? prefs.habilidade[prof.id] = v : delete prefs.habilidade[prof.id]; guardarPrefs(); };
 $("p-cadeia").onchange = () => { calcularReceitas(); montarProfissoes(); filtrarProf(); };
 $("filtros-prof").oninput = () => { clearTimeout(esperaProf); esperaProf = setTimeout(filtrarProf, 120); };
 $("cab-prof").onclick = e => {

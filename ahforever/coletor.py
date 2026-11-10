@@ -79,7 +79,9 @@ def coletar_casa(api, con, cfg, ruleset_id, casa_id, tipo, agora):
     if r.status != 200 or r.sha256 == sha_anterior:
         return None
     anuncios = _anuncios(r.dados)
-    coleta_id = banco.gravar_coleta(con, ruleset_id, casa_id, tipo, agora, r, len(anuncios), resumir(anuncios))
+    resumos = resumir(anuncios)
+    coleta_id = banco.gravar_coleta(con, ruleset_id, casa_id, tipo, agora, r, len(anuncios), resumos)
+    banco.gravar_degraus(con, ruleset_id, casa_id, tipo, resumos)
     if coleta_anterior:
         intervalo = int((_instante(r.last_modified, agora) - _instante(last_modified, coleta_anterior)).total_seconds())
         anteriores = _foto_guardada(cfg, ruleset_id, casa_id, tipo, coleta_anterior)

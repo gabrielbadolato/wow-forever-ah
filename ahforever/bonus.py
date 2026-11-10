@@ -67,6 +67,15 @@ def recargas(habilidades, tempos):
     return {receita: h for receita, h in horas.items() if h >= RECARGA_MINIMA_HORAS}
 
 
+def dificuldades(habilidades):
+    """Habilidade em que a receita fica amarela e em que fica cinza: {receita_id: [amarela, cinza]}.
+
+    As tabelas não trazem o nível em que a receita é aprendida, só estes dois.
+    """
+    return {int(h["ID"]): [int(h["TrivialSkillLineRankLow"]), int(h["TrivialSkillLineRankHigh"])]
+            for h in habilidades if int(h["TrivialSkillLineRankHigh"]) > 0}
+
+
 def caminho(cfg):
     return cfg.banco.parent / "bonus.json"
 
@@ -80,7 +89,9 @@ def baixar(cfg, forcar=False):
     try:
         versao = _get("/api/builds").json()[PRODUTO][0]["version"]
         dados = montar(*(_tabela(t, versao) for t in ("ItemBonus", "ItemNameDescription", "RandPropPoints")))
-        dados["recargas"] = recargas(_tabela("SkillLineAbility", versao), _tabela("SpellCooldowns", versao))
+        habilidades = _tabela("SkillLineAbility", versao)
+        dados["recargas"] = recargas(habilidades, _tabela("SpellCooldowns", versao))
+        dados["dificuldades"] = dificuldades(habilidades)
     except (requests.RequestException, KeyError, IndexError, ValueError) as e:
         print(f"bônus: não foi possível atualizar ({e})")
         return

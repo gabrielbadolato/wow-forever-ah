@@ -39,9 +39,13 @@ def _casa(con, ruleset_id, casa_id):
         if not coleta:
             continue
         coletado_em = max(coletado_em or "", coleta[1])
-        linhas += [list(l) for l in con.execute(
-            "SELECT item_id, variante, preco_min, preco_mercado, quantidade, n_anuncios "
-            "FROM precos WHERE coleta_id = ?", (coleta[0],))]
+        # O sétimo campo (degraus de preço) só existe para quem tem mais de um preço à venda.
+        for *linha, degraus in con.execute(
+                "SELECT p.item_id, p.variante, p.preco_min, p.preco_mercado, p.quantidade, p.n_anuncios, "
+                "d.degraus FROM precos p LEFT JOIN degraus d ON d.ruleset_id = ? AND d.casa_id = ? "
+                "AND d.tipo = ? AND d.item_id = p.item_id AND d.variante = p.variante "
+                "WHERE p.coleta_id = ?", (ruleset_id, casa_id, tipo, coleta[0])):
+            linhas.append(linha + ([json.loads(degraus)] if degraus else []))
     return coletado_em, linhas
 
 
@@ -147,10 +151,25 @@ def _vendas(con, ruleset_id, casa_id, agora):
     segundos = con.execute(
         "SELECT SUM(intervalo_vendas) FROM coletas WHERE ruleset_id = ? AND casa_id = ? "
         "AND coletado_em >= ? AND tipo = 'itens'", casa).fetchone()[0] or 0
-    itens = dict(con.execute(
-        "SELECT v.item_id, SUM(v.quantidade) FROM vendas v JOIN coletas c ON c.id = v.coleta_id "
-        "WHERE c.ruleset_id = ? AND c.casa_id = ? AND c.coletado_em >= ? GROUP BY 1", casa))
-    return {"horas": round(segundos / 3600, 1), "itens": itens}
+    itens, valores = {}, {}
+    for item_id, quantidade, valor in con.execute(
+            "SELECT v.item_id, SUM(v.quantidade), SUM(v.valor) FROM vendas v JOIN coletas c ON c.id = v.coleta_id "
+            "WHERE c.ruleset_id = ? AND c.casa_id = ? AND c.coletado_em >= ? GROUP BY 1", casa):
+        itens[item_id], valores[item_id] = quantidade, valor
+    # valores: cobre que essas vendas somaram; dividido pela quantidade dá o preço a que o item vende.
+    return {"horas": round(segundos / 3600, 1), "itens": itens, "valores": valores}
+
+
+# A média só vale com um mínimo de fotos; antes disso um item novo pareceria sempre em promoção.
+FOTOS_PARA_MEDIA = 6
+
+
+def _medias(con, ruleset_id, casa_id, agora):
+    """Média do menor preço de cada item nas fotos dos últimos 7 dias: {item: cobre}."""
+    desde = (agora - timedelta(days=DIAS_POR_HORA)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return dict(con.execute(
+        f"SELECT item_id, CAST(AVG(minimo) AS INTEGER) FROM ({SERIE}) WHERE minimo IS NOT NULL "
+        "GROUP BY item_id HAVING COUNT(*) >= ?", (ruleset_id, casa_id, desde, "9999", FOTOS_PARA_MEDIA)))
 
 
 # Muda quando o formato dos arquivos de histórico muda, para os já gravados serem refeitos.
@@ -263,7 +282,8 @@ def exportar(cfg):
             continue
         arquivo = f"casa-{ruleset_id}-{casa_id}.json"
         vendas = _vendas(con, ruleset_id, casa_id, agora)
-        _gravar(destino / arquivo, {"coletado_em": coletado_em, "linhas": linhas, "vendas": vendas})
+        _gravar(destino / arquivo, {"coletado_em": coletado_em, "linhas": linhas, "vendas": vendas,
+                                    "medias": _medias(con, ruleset_id, casa_id, agora)})
         if casa_id == cfg.casa_padrao and zip_do_addon is None:
             zip_do_addon = addon.gerar(cfg.pasta_site, f"{nome} {casa_id}", coletado_em, linhas, vendas)
         horas, meses = _historico(con, destino, ruleset_id, casa_id, agora.strftime("%Y-%m-%d"))
