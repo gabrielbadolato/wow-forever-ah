@@ -3,11 +3,14 @@
 regiao = "us"
 idioma = "en_US"
 
-# Rulesets: 1 = PvP, 2 = Normal, 3 = Roleplay, 15 = Roleplay PvP
+# Rulesets: 1 = PvP, 2 = Normal, 3 = Roleplay, 15 = Roleplay PvP.
+# Em 10/11/2026 os quatro devolviam exatamente os mesmos anúncios (as casas são
+# compartilhadas), então coletar um só já cobre todos.
 rulesets = [2]
 
-# Só coleta casas cujo nome contenha um destes textos. Lista vazia = todas.
-filtro_casas = ["Horde"]
+# Só coleta casas cujo nome contenha um destes textos. Lista vazia = todas
+# (Aliança, Horda e a neutra, Blackwater).
+filtro_casas = []
 
 banco = "dados/ah.sqlite"
 credenciais = "segredos/credenciais.env"

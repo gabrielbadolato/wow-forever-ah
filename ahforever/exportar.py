@@ -231,9 +231,12 @@ def exportar(cfg):
     if bonus.caminho(cfg).exists():
         _gravar(destino / "bonus.json", json.loads(bonus.caminho(cfg).read_text()))
 
-    casas = []
+    casas, vistas = [], {}
     for ruleset_id, casa_id, nome in con.execute(
             "SELECT ruleset_id, casa_id, nome FROM casas ORDER BY 1, 2").fetchall():
+        # A API não diz quais casas formam um mesmo mercado; a n-ésima de cada facção
+        # (Aliança, Horda, neutra) parece ser do mesmo, pelo tamanho. Conta as vazias também.
+        grupo = vistas[ruleset_id, nome] = vistas.get((ruleset_id, nome), 0) + 1
         coletado_em, linhas = _casa(con, ruleset_id, casa_id)
         if not linhas:
             continue
@@ -241,7 +244,7 @@ def exportar(cfg):
         _gravar(destino / arquivo, {"coletado_em": coletado_em, "linhas": linhas,
                                     "vendas": _vendas(con, ruleset_id, casa_id, agora)})
         horas, meses = _historico(con, destino, ruleset_id, casa_id, agora.strftime("%Y-%m-%d"))
-        casas.append({"ruleset": ruleset_id, "id": casa_id, "nome": nome,
+        casas.append({"ruleset": ruleset_id, "id": casa_id, "nome": nome, "grupo": grupo,
                       "coletado_em": coletado_em, "itens": len(linhas), "arquivo": arquivo,
                       "horas": horas, "meses": meses})
     con.close()

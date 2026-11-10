@@ -322,12 +322,12 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
     </form>
     <div id="bloco-mat" hidden>
       <h2 class="titulo-bloco">Materiais brutos</h2>
-      <p class="nota">Material coletado não tem custo de fabricação: o lucro é o menor preço do leilão menos os 5% da casa.
+      <p class="nota">Material coletado não tem custo de fabricação: o lucro é o menor preço do leilão menos a taxa da casa (5%; 15% na neutra).
         Quando o NPC paga mais do que isso, o valor aparece em vermelho e vale mais vender ao NPC.</p>
       <div class="rolagem">
         <table>
           <thead><tr><th>Material</th><th class="num sd">Menor preço (un.)</th><th class="num sd">Mercado (un.)</th>
-            <th class="num" title="Menor preço menos os 5% da casa de leilões">Lucro (un., −5%)</th>
+            <th class="num" title="Menor preço menos a taxa da casa de leilões (5%; 15% na neutra)">Lucro (un., −taxa)</th>
             <th class="num sd" title="Quanto um vendedor NPC paga pela unidade">NPC paga</th><th class="num">À venda</th>
             <th class="num sd" title="Vendas estimadas por dia">Vendas/dia</th>
             <th class="num sd" title="Lucro por unidade vezes as vendas por dia">Lucro/dia</th></tr></thead>
@@ -337,7 +337,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
     </div>
     <div id="bloco-rec">
     <h2 class="titulo-bloco">Receitas</h2>
-    <p class="nota">Lucro potencial com os anúncios de agora: venda pelo menor preço, menos 5% da casa de leilões, menos os materiais
+    <p class="nota">Lucro potencial com os anúncios de agora: venda pelo menor preço, menos a taxa da casa de leilões (5%; 15% na neutra), menos os materiais
       ao preço de mercado (ou de NPC, quando mais barato). Anúncio não é venda: olhe a quantidade à venda e o histórico antes de fabricar.</p>
     <div class="rolagem">
       <table>
@@ -345,7 +345,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
           <th data-ordem="nome">Receita</th>
           <th data-ordem="categoria" class="sd">Categoria</th>
           <th data-ordem="custo" class="num sd">Materiais</th>
-          <th data-ordem="bruto" class="num sd">Venda (−5%)</th>
+          <th data-ordem="bruto" class="num sd">Venda (−taxa)</th>
           <th data-ordem="lucro" class="num">Lucro</th>
           <th data-ordem="margem" class="num sd">Margem</th>
           <th data-ordem="qtd" class="num">À venda</th>
@@ -608,7 +608,9 @@ function preencherAtributos() {
 function esconderDica() { dicaDe = null; $("dica").hidden = true; }
 
 // ---- Profissões: lucro por receita ----
-const CORTE_DA_CASA = 0.05;
+// A casa fica com 5% da venda; a neutra (Blackwater), com 15%.
+const corteDaCasa = () => casaAtual?.nome.startsWith("Blackwater") ? 0.15 : 0.05;
+const faccao = nome => nome.startsWith("Horde") ? "Horda" : nome.startsWith("Alliance") ? "Aliança" : "Neutra";
 let receitas, todasReceitas = [], linhasProf = [];
 const porItem = new Map();
 const prof = {id: null, ordem: "lucro", sentido: -1, abertos: new Set(), materiaisAbertos: new Set()};
@@ -681,7 +683,7 @@ function calcularReceitas() {
       if (p.preco == null) completo = false; else custo += p.preco * q;
       return {id, q, ...p};
     });
-    const bruto = venda == null ? null : Math.round(venda * feitos * (1 - CORTE_DA_CASA));
+    const bruto = venda == null ? null : Math.round(venda * feitos * (1 - corteDaCasa()));
     const lucro = completo && bruto != null ? bruto - custo : null;
     return {rid, profId, categoria: categoria || "", nome, busca: nome.toLowerCase(), item, feitos, partes,
       custo: completo ? custo : null, bruto, lucro, margem: lucro != null && custo > 0 ? lucro / custo * 100 : null,
@@ -711,7 +713,7 @@ function desenharMateriais() {
     const valor = g => g.min == null ? -1 : g.vdia != null ? g.min * g.vdia : g.min;
     for (const g of materiaisDe(subs).filter(g => !nome || g.busca.includes(nome)).sort((a, b) => valor(b) - valor(a))) {
       const aberto = prof.materiaisAbertos.has(g.id);
-      const lucro = g.min == null ? null : Math.round(g.min * (1 - CORTE_DA_CASA));
+      const lucro = g.min == null ? null : Math.round(g.min * (1 - corteDaCasa()));
       const npcMelhor = lucro != null && g.npc != null && g.npc > lucro;
       const lucroDia = lucro != null && g.vdia != null ? Math.round(lucro * g.vdia) : null;
       h += `<tr class="item abre" data-id="${g.id}" aria-expanded="${aberto}">
@@ -806,7 +808,7 @@ function desenharResumo() {
       .map(l => ({item: l.item, nome: l.nome, lucro: porGiro ? l.lucroDia : l.lucro, vdia: l.vdia, tipo: "fabricar"}));
     for (const g of materiaisDe(MATERIAIS[id] || [])) {
       if (g.min == null) continue;
-      const unidade = Math.round(g.min * (1 - CORTE_DA_CASA));
+      const unidade = Math.round(g.min * (1 - corteDaCasa()));
       entradas.push({item: g.id, nome: g.nome, lucro: porGiro ? Math.round(unidade * g.vdia) : unidade, vdia: g.vdia, tipo: "coletar"});
     }
     const top = entradas.filter(e => e.lucro > 0).sort((a, b) => b.lucro - a.lucro).slice(0, 10);
@@ -1022,8 +1024,9 @@ async function carregarCasa() {
 async function iniciar() {
   [meta, catalogo, bonusJogo] = await Promise.all([json("dados/meta.json"), json("dados/itens.json"),
     json("dados/bonus.json").catch(() => ({bonus: {}, pontos: {}}))]);
-  $("casa").innerHTML = meta.casas.map((c, i) =>
-    `<option value="${i}">${c.id}${c.id === meta.casa_padrao ? " (padrão)" : ""} · ${esc(c.nome)}</option>`).join("");
+  const grupos = [...new Set(meta.casas.map(c => c.grupo))].sort((a, b) => a - b);
+  $("casa").innerHTML = grupos.map(n => `<optgroup label="Mercado ${n}">` + meta.casas.map((c, i) => c.grupo !== n ? "" :
+    `<option value="${i}">${faccao(c.nome)} · ${c.id}${c.id === meta.casa_padrao ? " (padrão)" : ""}</option>`).join("") + "</optgroup>").join("");
   const padrao = meta.casas.findIndex(c => c.id === meta.casa_padrao);
   $("casa").value = Math.max(padrao, 0);
   await carregarCasa();
