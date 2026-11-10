@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 
-from . import banco, bonus, compactar
+from . import addon, banco, bonus, compactar
 from .compactar import DIAS_POR_HORA, SERIE
 
 
@@ -153,8 +153,13 @@ def _vendas(con, ruleset_id, casa_id, agora):
     return {"horas": round(segundos / 3600, 1), "itens": itens}
 
 
+# Muda quando o formato dos arquivos de histórico muda, para os já gravados serem refeitos.
+VERSAO_HIST = 2
+
+
 def _dia_por_hora(con, ruleset_id, casa_id, dia):
-    """Pontos de um dia (UTC): {"t": [fotos], "itens": {id: [[mínimos], [quantidades]]}}."""
+    """Pontos de um dia (UTC): {"t": [fotos], "itens": {id: [[mínimos], [quantidades]]},
+    "vendas": {id: [[posição da foto, unidades vendidas desde a foto anterior], ...]}}."""
     seguinte = (datetime.fromisoformat(dia) + timedelta(days=1)).strftime("%Y-%m-%d")
     linhas = con.execute(SERIE, (ruleset_id, casa_id, dia, seguinte)).fetchall()
     fotos = sorted({l[0] for l in linhas})
@@ -164,23 +169,39 @@ def _dia_por_hora(con, ruleset_id, casa_id, dia):
         serie = itens.setdefault(item_id, [[None] * len(fotos), [None] * len(fotos)])
         serie[0][posicao[quando]] = minimo
         serie[1][posicao[quando]] = quantidade
-    return {"t": fotos, "itens": itens}
+    vendas = {}
+    for quando, item_id, vendido in con.execute(
+            "SELECT c.coletado_em, v.item_id, SUM(v.quantidade) FROM vendas v "
+            "JOIN coletas c ON c.id = v.coleta_id WHERE c.ruleset_id = ? AND c.casa_id = ? "
+            "AND c.coletado_em >= ? AND c.coletado_em < ? GROUP BY 1, 2 ORDER BY 2, 1",
+            (ruleset_id, casa_id, dia, seguinte)):
+        if quando in posicao:
+            vendas.setdefault(item_id, []).append([posicao[quando], vendido])
+    return {"v": VERSAO_HIST, "t": fotos, "itens": itens, "vendas": vendas}
 
 
 def _mes_por_dia(con, ruleset_id, casa_id, dias):
-    """Resumo diário: {"dias": [...], "itens": {id: [[mínimo], [média dos mínimos], [quantidade média]]}}."""
+    """Resumo diário: {"dias": [...], "itens": {id: [[mínimo], [média dos mínimos], [quantidade média], [vendido]]}}."""
     posicao = {d: i for i, d in enumerate(dias)}
     itens = {}
-    for dia, item_id, minimo, media, quantidade in con.execute(
-            "SELECT dia, item_id, minimo, media, quantidade FROM diario WHERE ruleset_id = ? "
+    for dia, item_id, minimo, media, quantidade, vendido in con.execute(
+            "SELECT dia, item_id, minimo, media, quantidade, vendido FROM diario WHERE ruleset_id = ? "
             "AND casa_id = ? AND dia >= ? AND dia <= ? AND minimo IS NOT NULL",
             (ruleset_id, casa_id, dias[0], dias[-1])):
         if dia not in posicao:
             continue
-        serie = itens.setdefault(item_id, [[None] * len(dias) for _ in range(3)])
-        for i, valor in enumerate((minimo, media, quantidade)):
+        serie = itens.setdefault(item_id, [[None] * len(dias) for _ in range(4)])
+        for i, valor in enumerate((minimo, media, quantidade, vendido)):
             serie[i][posicao[dia]] = valor
-    return {"dias": dias, "itens": itens}
+    return {"v": VERSAO_HIST, "dias": dias, "itens": itens}
+
+
+def _atual(arquivo, dias=None):
+    """O arquivo existe, está no formato de hoje e (resumo mensal) cobre estes dias."""
+    if not arquivo.exists():
+        return False
+    dados = json.loads(arquivo.read_text())
+    return dados.get("v") == VERSAO_HIST and (dias is None or dados.get("dias") == dias)
 
 
 def _historico(con, destino, ruleset_id, casa_id, hoje):
@@ -198,7 +219,7 @@ def _historico(con, destino, ruleset_id, casa_id, hoje):
     recentes = [d for d in dias[-DIAS_POR_HORA:] if d >= limite]
     for dia in recentes:
         arquivo = pasta / f"h-{dia}.json"
-        if dia >= ontem or not arquivo.exists():
+        if dia >= ontem or not _atual(arquivo):
             _gravar(arquivo, _dia_por_hora(con, ruleset_id, casa_id, dia))
     for arquivo in pasta.glob("h-*.json"):
         if arquivo.stem[2:] not in recentes:
@@ -209,7 +230,7 @@ def _historico(con, destino, ruleset_id, casa_id, hoje):
     for mes in meses:
         do_mes = [d for d in fechados if d.startswith(mes)]
         arquivo = pasta / f"d-{mes}.json"
-        if arquivo.exists() and json.loads(arquivo.read_text()).get("dias") == do_mes:
+        if _atual(arquivo, do_mes):
             continue
         _gravar(arquivo, _mes_por_dia(con, ruleset_id, casa_id, do_mes))
     return recentes, meses
@@ -231,7 +252,7 @@ def exportar(cfg):
     if bonus.caminho(cfg).exists():
         _gravar(destino / "bonus.json", json.loads(bonus.caminho(cfg).read_text()))
 
-    casas, vistas = [], {}
+    casas, vistas, zip_do_addon = [], {}, None
     for ruleset_id, casa_id, nome in con.execute(
             "SELECT ruleset_id, casa_id, nome FROM casas ORDER BY 1, 2").fetchall():
         # A API não diz quais casas formam um mesmo mercado; a n-ésima de cada facção
@@ -241,8 +262,10 @@ def exportar(cfg):
         if not linhas:
             continue
         arquivo = f"casa-{ruleset_id}-{casa_id}.json"
-        _gravar(destino / arquivo, {"coletado_em": coletado_em, "linhas": linhas,
-                                    "vendas": _vendas(con, ruleset_id, casa_id, agora)})
+        vendas = _vendas(con, ruleset_id, casa_id, agora)
+        _gravar(destino / arquivo, {"coletado_em": coletado_em, "linhas": linhas, "vendas": vendas})
+        if casa_id == cfg.casa_padrao and zip_do_addon is None:
+            zip_do_addon = addon.gerar(cfg.pasta_site, f"{nome} {casa_id}", coletado_em, linhas, vendas)
         horas, meses = _historico(con, destino, ruleset_id, casa_id, agora.strftime("%Y-%m-%d"))
         casas.append({"ruleset": ruleset_id, "id": casa_id, "nome": nome, "grupo": grupo,
                       "coletado_em": coletado_em, "itens": len(linhas), "arquivo": arquivo,
@@ -252,6 +275,7 @@ def exportar(cfg):
     _gravar(destino / "meta.json", {
         "gerado_em": agora.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "casa_padrao": cfg.casa_padrao,
+        "addon": zip_do_addon,
         "casas": casas,
     })
     print(f"site: {len(casas)} casas exportadas para {destino}")

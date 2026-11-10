@@ -28,3 +28,7 @@ casa_padrao = 113
 repositorio_pages = "git@github.com:gabrielbadolato/wow-forever-ah.git"
 chave_pages = "segredos/pages_deploy_key"
 pasta_pages = ".pages"
+
+# Alertas no Discord: regras em alertas.toml; a URL do webhook fica fora do git.
+alertas = "alertas.toml"
+webhook_discord = "segredos/discord_webhook"

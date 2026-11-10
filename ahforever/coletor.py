@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 
-from . import banco, bonus, catalogo, config, exportar, publicar, receitas, vendas, wowhead
+from . import alertas, banco, bonus, catalogo, config, exportar, publicar, receitas, vendas, wowhead
 from .api import ClienteBlizzard, ErroAPI
 from .resumo import resumir
 
@@ -161,6 +161,11 @@ def main():
         print(f"catálogo: adiado para a próxima rodada ({e})")
     exportar.exportar(cfg)
     publicar.publicar(cfg)
+    # Um defeito nos alertas (regra mal escrita, Discord fora do ar) não pode derrubar a coleta.
+    try:
+        alertas.verificar(cfg)
+    except Exception as e:
+        print(f"alertas: falhou ({e})")
 
 
 if __name__ == "__main__":

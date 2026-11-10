@@ -84,7 +84,7 @@ main.sem-lateral #categorias { display: none; }
 #categorias .grupo { padding: 10px 6px 3px; font: 11px Arial, sans-serif; text-transform: uppercase; letter-spacing: .6px; color: var(--fraco); }
 
 /* ---- Barra de busca ---- */
-#filtros, #filtros-prof, #filtros-arb { flex: none; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: end; padding: 9px 12px;
+#filtros, #filtros-prof, #filtros-arb, #filtros-lista { flex: none; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: end; padding: 9px 12px;
   background: linear-gradient(#262626, #1a1a1a); border-bottom: 1px solid #000; box-shadow: inset 0 -1px 0 var(--metal-escuro); }
 label { display: flex; flex-direction: column; gap: 3px; font: 12px var(--titulo); color: var(--ouro); }
 input, select { background: #000; color: #fff; border: 1px solid #5a5a5a; border-radius: 6px; padding: 5px 8px;
@@ -171,6 +171,13 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
 .chips button.ativo { color: #fff; background: #6a560f; }
 .fav { margin-left: auto; background: none; border: 0; color: #4a4a4a; cursor: pointer; font-size: 16px; line-height: 1; padding: 0 6px; }
 .fav.ativo { color: #ffd100; }
+.fav.mais { font-size: 18px; color: #8a8a8a; } .fav.mais.ativo { color: #4be04b; }
+.comparar { max-width: 800px; margin-top: 10px; }
+.comparar table { min-width: 0; }
+.comparar td, .comparar th { padding: 3px 10px; font-size: 13px; }
+.comparar tr.aqui td { color: var(--ouro); }
+#atualizado a { color: var(--ouro-fosco); }
+#v-lista input[type=number] { width: 70px; }
 .nota { flex: none; margin: 0; padding: 7px 12px; font-size: 12px; color: var(--fraco); border-bottom: 1px solid #000; background: #161616; }
 #aviso, .aviso { padding: 30px; text-align: center; color: var(--fraco); }
 #rodape { flex: none; display: flex; align-items: center; gap: 10px; padding: 7px 12px; color: var(--fraco); font-size: 13px;
@@ -205,8 +212,8 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
   body { height: 100vh; overflow: hidden; }
   .janela { height: 100%; }
   #v-leiloes .rolagem { flex: 1; overflow: auto; }
-  #v-prof, #v-resumo { overflow-y: auto; }
-  #v-prof > *, #v-resumo > *, #bloco-mat > *, #bloco-rec > * { flex: none; }
+  #v-prof, #v-resumo, #v-arb, #v-lista { overflow-y: auto; }
+  #v-prof > *, #v-resumo > *, #v-arb > *, #v-lista > *, #bloco-mat > *, #bloco-rec > * { flex: none; }
 }
 @media (max-width: 760px) {
   body { padding: 18px 0 64px; -webkit-tap-highlight-color: transparent; }
@@ -216,8 +223,9 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
   /* As abas viram a barra fixa do rodapé, com a escolha da casa ao lado. */
   .barra-abas { position: fixed; z-index: 5; top: auto; bottom: 0; flex-wrap: nowrap; align-items: center; gap: 6px; padding: 14px 6px 6px;
     background: linear-gradient(transparent, #050607 35%); }
-  #abas { gap: 3px; }
-  #abas button, #abas button.ativo { border-top: 1px solid #000; border-radius: 6px; padding: 11px 10px; }
+  #abas { gap: 3px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  #abas::-webkit-scrollbar { display: none; }
+  #abas button, #abas button.ativo { flex: none; white-space: nowrap; border-top: 1px solid #000; border-radius: 6px; padding: 11px 10px; }
   .barra-abas label { margin-left: auto; padding: 0; font-size: 0; min-width: 0; }
   .barra-abas select { max-width: 100%; min-width: 0; width: 118px; font-size: 14px; padding: 9px 4px; }
   #atualizado { display: none; }
@@ -229,7 +237,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
   #categorias .grupo { align-self: center; padding: 0 6px; flex: none; }
 
   /* Filtros: só a busca fica à vista; o resto abre pelo botão. */
-  #filtros, #filtros-prof, #filtros-arb { align-items: stretch; padding: 8px; gap: 8px; }
+  #filtros, #filtros-prof, #filtros-arb, #filtros-lista { align-items: stretch; padding: 8px; gap: 8px; }
   #filtros > label:first-child, #filtros-prof > label:first-child, #filtros-arb > label:first-child { flex: 1 1 60%; min-width: 0; }
   #f-nome, #p-nome { width: 100%; }
   .mais-filtros { display: block; align-self: flex-end; padding: 9px 14px; }
@@ -276,6 +284,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
       <button type="button" data-modo="profissoes">Profissões</button>
       <button type="button" data-modo="resumo">Resumo</button>
       <button type="button" data-modo="arbitragem">Entre casas</button>
+      <button type="button" data-modo="lista">Lista</button>
     </nav>
     <label>Casa <select id="casa"></select></label>
     <div id="atualizado"></div>
@@ -294,6 +303,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
       <label class="avancado">Raridade mínima <select id="f-qualidade">
         <option value="0">Todas</option><option value="1">Comum</option><option value="2">Incomum</option>
         <option value="3">Raro</option><option value="4">Épico</option></select></label>
+      <label class="avancado" title="Procura no sufixo e nos atributos das variantes e no texto do tooltip. Ex.: monkey, stamina, fire resistance">Atributo ou sufixo <input id="f-attr" type="search" placeholder="ex.: of the Monkey" autocomplete="off" style="width:150px"></label>
       <label class="avancado">Preço máx. (ouro) <input id="f-preco" type="number" min="0" step="any" style="width:86px"></label>
       <button class="acao avancado" type="button" id="limpar">Limpar</button>
     </form>
@@ -392,6 +402,32 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
     </div>
     <div id="aviso-arb" class="aviso" hidden></div>
   </section>
+  <section class="painel" id="v-lista" hidden>
+    <h2 class="titulo-bloco">Lista de compras</h2>
+    <p class="nota" id="nota-lista"></p>
+    <div id="bloco-lista">
+      <div class="rolagem">
+        <table>
+          <thead><tr><th>Receita</th><th class="num">Fabricar</th><th class="num sd">Materiais</th><th class="num sd">Venda (−taxa)</th>
+            <th class="num">Lucro</th><th></th></tr></thead>
+          <tbody id="linhas-lista"></tbody>
+        </table>
+      </div>
+      <h2 class="titulo-bloco">O que comprar</h2>
+      <form id="filtros-lista" onsubmit="return false">
+        <button class="acao" type="button" id="copiar-lista">Copiar lista</button>
+        <button class="acao" type="button" id="limpar-lista">Esvaziar</button>
+      </form>
+      <div class="rolagem">
+        <table>
+          <thead><tr><th>Material</th><th class="num">Quantidade</th><th class="num sd">Preço (un.)</th><th class="num">Total</th>
+            <th class="sd">Onde</th><th class="num sd" title="Unidades à venda nesta casa">À venda</th></tr></thead>
+          <tbody id="linhas-compras"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="aviso-lista" class="aviso" hidden></div>
+  </section>
 </main>
 </div>
 <div id="dica" hidden></div>
@@ -404,14 +440,19 @@ const ORDEM_CLASSES = [2, 4, 1, 0, 7, 6, 11, 9, 5, 15, 12, 13];
 const SLOTS = {HEAD: "Head", NECK: "Neck", SHOULDER: "Shoulder", BODY: "Shirt", CHEST: "Chest", WAIST: "Waist",
   LEGS: "Legs", FEET: "Feet", WRIST: "Wrist", HAND: "Hands", FINGER: "Finger", TRINKET: "Trinket", CLOAK: "Back",
   HOLDABLE: "Held In Off-hand", SHIELD: "Shield", TABARD: "Tabard"};
-const ARMADURA = 4;
+const ARMADURA = 4, ARMAS = 2;
+// Subcategorias de armas com o nome e na ordem da casa de leilões do jogo; a API chama as de uma e de duas mãos pelo mesmo nome.
+const NOMES_ARMAS = {0: "One-Handed Axes", 4: "One-Handed Maces", 7: "One-Handed Swords", 15: "Daggers", 13: "Fist Weapons",
+  19: "Wands", 1: "Two-Handed Axes", 5: "Two-Handed Maces", 8: "Two-Handed Swords", 6: "Polearms", 10: "Staves",
+  2: "Bows", 18: "Crossbows", 3: "Guns", 16: "Thrown", 20: "Fishing Poles", 14: "Miscellaneous"};
+const ORDEM_ARMAS = [0, 4, 7, 15, 13, 19, 1, 5, 8, 6, 10, 2, 18, 3, 16, 20, 14];
 const posicao = (lista, v) => (lista.indexOf(v) + 1) || lista.length + 1;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 
 let meta, catalogo, bonusJogo, grupos = [], filtrados = [];
 // Preferências de quem usa, guardadas só neste navegador.
-const prefs = {profissoes: [], favoritos: []};
+const prefs = {profissoes: [], favoritos: [], lista: {}};
 try { Object.assign(prefs, JSON.parse(localStorage.getItem("ah-forever") || "{}")); } catch {}
 const guardarPrefs = () => { try { localStorage.setItem("ah-forever", JSON.stringify(prefs)); } catch {} };
 const alternar = (lista, id) => { const i = lista.indexOf(id); i < 0 ? lista.push(id) : lista.splice(i, 1); guardarPrefs(); };
@@ -419,7 +460,7 @@ let casaAtual, vendasCasa = {horas: 0, itens: {}};
 // Horas de observação para mostrar vendas por dia e para ranquear por elas.
 const HORAS_PARA_MOSTRAR = 2, HORAS_PARA_RANQUEAR = 6, HORAS_DE_ATRASO = 2, HORAS_DE_PANE = 4;
 const porDia = v => v == null ? "–" : v >= 10 ? Math.round(v).toLocaleString("pt-BR") : v.toLocaleString("pt-BR", {maximumFractionDigits: 1});
-const estado = {classe: null, sub: null, slot: null, ordem: "nome", sentido: 1, pagina: 0, abertos: new Set(), periodo: "7d", modo: "leiloes"};
+const estado = {classe: null, sub: null, slot: null, ordem: "nome", sentido: 1, pagina: 0, abertos: new Set(), comparar: new Set(), periodo: "7d", modo: "leiloes"};
 
 async function json(caminho) {
   const r = await fetch(caminho, {cache: "no-cache"});
@@ -469,12 +510,16 @@ async function pontosDoItem(id) {
     const s = r.itens[id];
     if (s) r.dias.forEach((dia, i) => {
       if (!usados.includes(dia) && s[2][i] != null)
-        pontos.push({t: Date.parse(dia + "T12:00:00Z"), min: s[0][i], qtd: s[2][i], diario: true});
+        pontos.push({t: Date.parse(dia + "T12:00:00Z"), min: s[0][i], qtd: s[2][i], vend: s[3]?.[i] ?? null, diario: true});
     });
   }
   for (const d of dias) {
     const s = d.itens[id];
-    if (s) d.t.forEach((t, i) => { if (s[1][i] != null) pontos.push({t: Date.parse(t), min: s[0][i], qtd: s[1][i]}); });
+    // Vendas: unidades que sumiram entre a foto anterior e esta. Arquivos antigos não as trazem.
+    const vendidos = new Map(d.vendas?.[id] || []);
+    if (s) d.t.forEach((t, i) => {
+      if (s[1][i] != null) pontos.push({t: Date.parse(t), min: s[0][i], qtd: s[1][i], vend: d.vendas ? vendidos.get(i) || 0 : null});
+    });
   }
   pontos.sort((a, b) => a.t - b.t);
   if (estado.periodo !== "24h" || !pontos.length) return pontos;
@@ -508,11 +553,29 @@ function grafico(pontos, campo, cor, formato) {
   </svg>`;
 }
 
+// Vendas estimadas em barras: cada barra é o que saiu até aquela foto (ou no dia, nos resumos).
+function barras(pontos) {
+  const validos = pontos.filter(p => p.vend != null);
+  if (!validos.some(p => p.vend > 0)) return '<div class="vazio">Nenhuma venda observada no período.</div>';
+  const x = escalaX(pontos), max = Math.max(...validos.map(p => p.vend));
+  const base = GA - GM.b, y = v => GM.t + (1 - v / (max * 1.08)) * (base - GM.t);
+  const largura = Math.max(1.5, Math.min(9, (GL - GM.e - GM.d) / pontos.length * .7));
+  const total = validos.reduce((soma, p) => soma + p.vend, 0);
+  return `<svg viewBox="0 0 ${GL} ${GA}" role="img" aria-label="Vendas estimadas">
+    <line x1="${GM.e}" x2="${GL - GM.d}" y1="${base}" y2="${base}" stroke="#5a4630"/>
+    <line x1="${GM.e}" x2="${GL - GM.d}" y1="${y(max)}" y2="${y(max)}" stroke="#3a2e21" stroke-dasharray="3 4"/>
+    <text x="${GM.e}" y="${y(max) - 4}">${max.toLocaleString("pt-BR")}</text>
+    <text x="${GL - GM.d}" y="${y(max) - 4}" text-anchor="end">${total.toLocaleString("pt-BR")} no período</text>
+    ${validos.filter(p => p.vend > 0).map(p => `<rect x="${(Math.min(Math.max(x(p.t) - largura / 2, GM.e), GL - GM.d - largura)).toFixed(1)}" y="${y(p.vend).toFixed(1)}" width="${largura.toFixed(1)}" height="${(base - y(p.vend)).toFixed(1)}" fill="#4be04b" fill-opacity=".8"/>`).join("")}
+    <line class="cursor" y1="${GM.t}" y2="${base}" stroke="#e8dcc6" stroke-opacity=".5" visibility="hidden"/>
+  </svg>`;
+}
+
 function leitura(p) {
   const quando = new Date(p.t).toLocaleString("pt-BR", p.diario
     ? {day: "2-digit", month: "2-digit", year: "numeric"}
     : {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
-  return `${quando}${p.diario ? " (resumo do dia)" : ""} · ${moeda(p.min)} · ${p.qtd.toLocaleString("pt-BR")} un.`;
+  return `${quando}${p.diario ? " (resumo do dia)" : ""} · ${moeda(p.min)} · ${p.qtd.toLocaleString("pt-BR")} un.${p.vend ? ` · vendeu ~${p.vend.toLocaleString("pt-BR")}` : ""}`;
 }
 
 async function desenharHistorico(id) {
@@ -529,9 +592,27 @@ async function desenharHistorico(id) {
       caixa.querySelector(".leitura").innerHTML = leitura(pontos[pontos.length - 1]);
       graficos.innerHTML =
         `<div class="rotulo">Menor preço por unidade</div>${grafico(pontos, "min", "#ffd100", moedaTexto)}
-         <div class="rotulo">Quantidade à venda</div>${grafico(pontos, "qtd", "#6fb7ff", v => v.toLocaleString("pt-BR"))}`;
+         <div class="rotulo">Quantidade à venda</div>${grafico(pontos, "qtd", "#6fb7ff", v => v.toLocaleString("pt-BR"))}
+         ${pontos.some(p => p.vend != null) ? `<div class="rotulo">Vendas estimadas ${pontos.some(p => p.diario) ? "(por dia nos resumos, por coleta nos dias recentes)" : "por coleta"}</div>${barras(pontos)}` : ""}`;
     }
   }
+}
+
+// O mesmo item em todas as casas coletadas, lado a lado.
+async function desenharComparacao(id) {
+  const casas = await Promise.all(meta.casas.map(c => c === casaAtual ? {casa: c, itens: porItem, vendas: vendasCasa} : casaDoMercado(c)));
+  const caixa = document.querySelector(`.comparar[data-id="${id}"]`);
+  if (!caixa) return;
+  const linhas = casas.map(({casa, itens, vendas}) => {
+    const g = itens.get(id);
+    const vdia = g && vendas.horas >= HORAS_PARA_MOSTRAR ? (vendas.itens[id] || 0) / vendas.horas * 24 : null;
+    return `<tr class="${casa === casaAtual ? "aqui" : ""}"><td>Mercado ${casa.grupo} · ${rotulo(casa)}</td>
+      <td class="num">${g ? moeda(g.min) : "–"}</td><td class="num sd">${g ? moeda(g.mercado) : "–"}</td>
+      <td class="num">${g ? g.qtd.toLocaleString("pt-BR") : "–"}</td><td class="num sd">${porDia(vdia)}</td></tr>`;
+  }).join("");
+  caixa.innerHTML = `<div class="rotulo">Nas outras casas${porItem.get(id)?.variantes.length > 1 ? " (menor preço entre todas as variantes)" : ""}</div>
+    <table><thead><tr><th>Casa</th><th class="num">Menor preço</th><th class="num sd">Mercado</th><th class="num">À venda</th><th class="num sd">Vendas/dia</th></tr></thead>
+    <tbody>${linhas}</tbody></table>`;
 }
 
 function celulaVariante(g, v) {
@@ -543,7 +624,8 @@ function celulaVariante(g, v) {
 function caixaHistorico(id) {
   const botoes = Object.entries(PERIODOS).map(([k, nome]) =>
     `<button type="button" data-periodo="${k}" class="${k === estado.periodo ? "ativo" : ""}">${nome}</button>`).join(" ");
-  return `<tr class="detalhe"><td colspan="7">${semHover ? `<div class="atributos" data-id="${id}"></div>` : ""}${histHtml(id, botoes)}</td></tr>`;
+  return `<tr class="detalhe"><td colspan="7">${semHover ? `<div class="atributos" data-id="${id}"></div>` : ""}${histHtml(id, botoes)}
+    <div class="comparar" data-id="${id}">${estado.comparar.has(id) ? '<div class="vazio">Carregando…</div>' : `<button class="acao" type="button" data-comparar="${id}">Comparar com as outras casas</button>`}</div></td></tr>`;
 }
 function histHtml(id, botoes) {
   botoes ??= Object.entries(PERIODOS).map(([k, nome]) =>
@@ -801,7 +883,7 @@ function desenharProf() {
       <td class="nome">${iconeHtml(i)}<span><span class="q-${i.qualidade}">${esc(l.nome)}</span>
         ${l.feitos !== 1 ? `<span class="variantes">faz ${l.feitos} por vez</span>` : ""}
         ${l.recarga ? `<span class="variantes" title="Só dá para fabricar uma vez a cada ${textoRecarga(l.recarga)}">recarga ${textoRecarga(l.recarga)}</span>` : ""}
-        <span class="sm">${esc(l.categoria)}${margem === "–" ? "" : ` · margem ${margem}`}${l.vdia != null ? ` · vende ~${porDia(l.vdia)}/dia` : ""}</span></span></td>
+        <span class="sm">${esc(l.categoria)}${margem === "–" ? "" : ` · margem ${margem}`}${l.vdia != null ? ` · vende ~${porDia(l.vdia)}/dia` : ""}</span></span><button type="button" class="fav mais ${prefs.lista[l.rid] ? "ativo" : ""}" data-lista="${l.rid}" title="${prefs.lista[l.rid] ? "Tirar da lista de compras" : "Pôr na lista de compras"}" aria-label="Lista de compras" aria-pressed="${!!prefs.lista[l.rid]}">${prefs.lista[l.rid] ? "✓" : "＋"}</button></td>
       <td class="sd">${esc(l.categoria)}</td>
       <td class="num sd">${moedaOuTraco(l.custo)}</td><td class="num sd">${moedaOuTraco(l.bruto)}</td>
       <td class="num ${sinal}">${moedaOuTraco(l.lucro)}</td>
@@ -938,6 +1020,62 @@ function filtrarArb() {
   $("aviso-arb").textContent = "Nenhuma oportunidade com esses filtros.";
 }
 
+// ---- Lista de compras: receitas marcadas na aba Profissões e a soma dos materiais ----
+let textoLista = "";
+function desenharLista() {
+  const escolhidas = Object.entries(prefs.lista).map(([rid, vezes]) => ({l: todasReceitas.find(l => l.rid === +rid), vezes}))
+    .filter(e => e.l).sort((a, b) => a.l.nome.localeCompare(b.l.nome));
+  $("bloco-lista").hidden = !escolhidas.length;
+  $("aviso-lista").hidden = escolhidas.length > 0;
+  $("aviso-lista").textContent = "A lista está vazia. Na aba Profissões, toque no ＋ ao lado de uma receita.";
+  $("nota-lista").textContent = "";
+  if (!escolhidas.length) return;
+  // Material que compensa fabricar entra pelos materiais dele; o resto é somado como está.
+  const comprar = new Map(), fabricar = new Map();
+  const somar = (id, q) => {
+    const p = precoReagente(id);
+    if (p.partes) {
+      fabricar.set(id, (fabricar.get(id) || 0) + q);
+      for (const [parte, n] of p.partes) somar(parte, n * q / p.feitos);
+    } else comprar.set(id, {...p, q: (comprar.get(id)?.q || 0) + q});
+  };
+  let custo = 0, bruto = 0, completo = true;
+  $("linhas-lista").innerHTML = escolhidas.map(({l, vezes}) => {
+    for (const p of l.partes) somar(p.id, p.q * vezes);
+    if (l.custo == null) completo = false; else custo += l.custo * vezes;
+    bruto += (l.bruto || 0) * vezes;
+    const i = infoItem(l.item), sinal = l.lucro == null ? "" : l.lucro >= 0 ? "pos" : "neg";
+    return `<tr class="item" data-id="${l.item}"><td class="nome">${iconeHtml(i)}<span><span class="q-${i.qualidade}">${esc(l.nome)}</span>
+        <span class="variantes">${esc(receitas.profissoes[l.profId])}${l.feitos !== 1 ? ` · faz ${l.feitos} por vez` : ""}</span></span></td>
+      <td class="num"><input type="number" min="1" step="1" value="${vezes}" data-vezes="${l.rid}" aria-label="Quantas vezes fabricar"></td>
+      <td class="num sd">${moedaOuTraco(l.custo == null ? null : l.custo * vezes)}</td>
+      <td class="num sd">${moedaOuTraco(l.bruto == null ? null : l.bruto * vezes)}</td>
+      <td class="num ${sinal}">${moedaOuTraco(l.lucro == null ? null : l.lucro * vezes)}</td>
+      <td><button type="button" class="fav" data-tirar="${l.rid}" title="Tirar da lista" aria-label="Tirar da lista">✕</button></td></tr>`;
+  }).join("");
+  const itens = [...comprar].map(([id, p]) => ({id, i: infoItem(id), ...p, q: Math.ceil(p.q - 1e-9)})).sort((a, b) => a.i.nome.localeCompare(b.i.nome));
+  $("linhas-compras").innerHTML = itens.map(c => {
+    const aVenda = porItem.get(c.id)?.qtd ?? 0, falta = c.fonte === "leilão" && aVenda < c.q;
+    return `<tr class="item" data-id="${c.id}"><td class="nome">${iconeHtml(c.i)}<span><span class="q-${c.i.qualidade}">${esc(c.i.nome)}</span>
+        <span class="sm">${c.fonte} · ${moedaOuTraco(c.preco)} cada${falta ? ` · só ${aVenda.toLocaleString("pt-BR")} à venda` : ""}</span></span></td>
+      <td class="num">${c.q.toLocaleString("pt-BR")}</td><td class="num sd">${moedaOuTraco(c.preco)}</td>
+      <td class="num">${moedaOuTraco(c.preco == null ? null : c.preco * c.q)}</td><td class="sd">${c.fonte}</td>
+      <td class="num sd ${falta ? "neg" : ""}">${c.fonte === "NPC" ? "–" : aVenda.toLocaleString("pt-BR")}</td></tr>`;
+  }).join("");
+  const intermediarios = [...fabricar].map(([id, q]) => `${Math.ceil(q - 1e-9).toLocaleString("pt-BR")} × ${infoItem(id).nome}`);
+  $("nota-lista").innerHTML = `Materiais ${completo ? moeda(custo) : "sem preço completo"} · venda líquida ${moeda(bruto)}` +
+    (completo ? ` · lucro <span class="${bruto - custo >= 0 ? "pos" : "neg"}">${moedaOuTraco(bruto - custo)}</span>` : "") +
+    ` · preços de ${esc(rotulo(casaAtual))}, pelo preço de mercado (comprar muito de uma vez sai mais caro).` +
+    (intermediarios.length ? `<br>Fabricar no caminho, por sair mais barato que comprar: ${esc(intermediarios.join(", "))}.` : "");
+  textoLista = itens.map(c => `${c.q} x ${c.i.nome}${c.fonte === "NPC" ? " (NPC)" : ""}`).join("\n");
+}
+
+async function abrirLista() {
+  $("aviso-lista").hidden = false; $("aviso-lista").textContent = "Carregando…"; $("bloco-lista").hidden = true;
+  receitas ??= await json("dados/receitas.json");
+  calcularReceitas(); desenharLista();
+}
+
 // Preenche só a seção visível, para o histórico aberto não existir em dobro.
 async function mostrarModo() {
   const modo = estado.modo;
@@ -945,13 +1083,15 @@ async function mostrarModo() {
   $("v-prof").hidden = modo !== "profissoes";
   $("v-resumo").hidden = modo !== "resumo";
   $("v-arb").hidden = modo !== "arbitragem";
-  document.querySelector("main").classList.toggle("sem-lateral", modo === "resumo" || modo === "arbitragem");
+  $("v-lista").hidden = modo !== "lista";
+  document.querySelector("main").classList.toggle("sem-lateral", ["resumo", "arbitragem", "lista"].includes(modo));
   for (const b of document.querySelectorAll("#abas button")) b.classList.toggle("ativo", b.dataset.modo === modo);
-  for (const id of ["linhas", "linhas-prof", "linhas-mat", "resumo", "linhas-arb"]) $(id).innerHTML = "";
+  for (const id of ["linhas", "linhas-prof", "linhas-mat", "resumo", "linhas-arb", "linhas-lista", "linhas-compras"]) $(id).innerHTML = "";
   esconderDica();
   if (modo === "profissoes") await abrirProfissoes();
   else if (modo === "resumo") await abrirResumo();
   else if (modo === "arbitragem") await abrirArbitragem();
+  else if (modo === "lista") await abrirLista();
   else { montarCategorias(); desenhar(); }
 }
 function trocarModo(modo) { estado.modo = modo; mostrarModo().catch(falhou); }
@@ -1008,10 +1148,9 @@ function montarCategorias() {
     const aberta = estado.classe === c.id;
     h += `<button data-classe="${c.id}" class="${aberta && estado.sub == null ? "ativo" : ""}">${esc(c.nome)} <small>${contagem.get(c.id)}</small></button>`;
     if (!aberta) continue;
-    // A API dá o mesmo nome às armas de uma e de duas mãos (subclasses 1, 5 e 8 são as de duas).
     const subs = Object.entries(c.sub).filter(([s]) => contagem.has(c.id + "/" + s))
-      .map(([s, nome]) => [s, c.id === 2 && [1, 5, 8].includes(+s) ? nome + " (duas mãos)" : nome])
-      .sort((a, b) => a[1].localeCompare(b[1]));
+      .map(([s, nome]) => [s, c.id === ARMAS && NOMES_ARMAS[s] || nome])
+      .sort((a, b) => c.id === ARMAS ? posicao(ORDEM_ARMAS, +a[0]) - posicao(ORDEM_ARMAS, +b[0]) : a[1].localeCompare(b[1]));
     if (subs.length < 2) continue;
     for (const [s, nome] of subs) {
       const escolhida = estado.sub === +s;
@@ -1030,11 +1169,32 @@ function montarCategorias() {
 
 const num = id => $(id).value === "" ? null : +$(id).value;
 
+// Filtro por atributo ou sufixo. Se o texto está no tooltip do item, vale o item inteiro;
+// se está só em algumas variantes, a linha passa a mostrar apenas elas (preço e quantidade delas).
+let textosTooltip;
+function porAtributo(g, texto) {
+  if (textosTooltip) {
+    g.textoBase ??= (textosTooltip[g.id] || []).map(l => l[0]).join("\n").toLowerCase();
+    if (g.textoBase.includes(texto)) return g;
+  }
+  const casam = g.variantes.filter(v => {
+    if (v.texto == null) { const d = decifrar(g, v.variante); v.texto = `${d.sufixo || ""} ${d.resumo.join(" ")}`.toLowerCase(); }
+    return v.texto.includes(texto);
+  });
+  if (!casam.length) return null;
+  if (casam.length === g.variantes.length) return g;
+  const barata = casam.reduce((a, b) => (b.min ?? Infinity) < (a.min ?? Infinity) ? b : a);
+  return {...g, variantes: casam, min: barata.min, mercado: barata.mercado,
+    qtd: casam.reduce((n, v) => n + v.qtd, 0), anuncios: casam.reduce((n, v) => n + v.anuncios, 0)};
+}
+
 function filtrar() {
   const nome = $("f-nome").value.trim().toLowerCase();
   const reqMin = num("f-req-min"), reqMax = num("f-req-max"), nivMin = num("f-niv-min"), nivMax = num("f-niv-max");
   const qMin = +$("f-qualidade").value, preco = num("f-preco"), soFavoritos = $("f-fav").checked;
-  const precoMax = preco == null ? null : preco * 10000;
+  const precoMax = preco == null ? null : preco * 10000, atributo = $("f-attr").value.trim().toLowerCase();
+  // O texto dos tooltips só é baixado quando alguém usa o filtro; até chegar, vale o que as variantes dizem.
+  if (atributo && !textosTooltip) carregarTooltips().then(d => { textosTooltip = d; filtrar(); }).catch(() => {});
   filtrados = grupos.filter(g =>
     (estado.classe == null || g.classe === estado.classe) &&
     (estado.sub == null || g.sub === estado.sub) &&
@@ -1045,8 +1205,9 @@ function filtrar() {
     (reqMax == null || (g.req != null && g.req <= reqMax)) &&
     (nivMin == null || (g.nivel != null && g.nivel >= nivMin)) &&
     (nivMax == null || (g.nivel != null && g.nivel <= nivMax)) &&
-    g.q >= qMin &&
-    (precoMax == null || (g.min != null && g.min <= precoMax)));
+    g.q >= qMin);
+  if (atributo) filtrados = filtrados.map(g => porAtributo(g, atributo)).filter(Boolean);
+  if (precoMax != null) filtrados = filtrados.filter(g => g.min != null && g.min <= precoMax);
   ordenar();
 }
 
@@ -1086,7 +1247,10 @@ function desenhar() {
   }
   $("linhas").innerHTML = h;
   pontosAbertos.clear();
-  for (const g of pagina) if (estado.abertos.has(g.id)) desenharHistorico(g.id);
+  for (const g of pagina) if (estado.abertos.has(g.id)) {
+    desenharHistorico(g.id);
+    if (estado.comparar.has(g.id)) desenharComparacao(g.id).catch(() => {});
+  }
   esconderDica();
   preencherAtributos();
   $("aviso").hidden = filtrados.length > 0;
@@ -1116,7 +1280,8 @@ async function carregarCasa() {
   // A página não sabe se a coleta rodou: atraso curto costuma ser a Blizzard, longo é defeito nosso.
   $("velho").textContent = `Os preços estão com ${Math.floor(atraso)} h de atraso: ` +
     (atraso < HORAS_DE_PANE ? "a Blizzard ainda não publicou preços novos." : "a coleta pode ter parado.");
-  $("atualizado").textContent = `Dados coletados ${haQuanto(dados.coletado_em)} · ${new Date(dados.coletado_em).toLocaleString("pt-BR")}`;
+  $("atualizado").innerHTML = `Dados coletados ${haQuanto(dados.coletado_em)} · ${new Date(dados.coletado_em).toLocaleString("pt-BR")}` +
+    (meta.addon ? ` · <a href="${esc(meta.addon)}" download title="Mostra estes preços no tooltip dos itens dentro do jogo. Extraia em Interface/AddOns.">Addon para o jogo</a>` : "");
   porItem.clear();
   for (const g of grupos) porItem.set(g.id, g);
   estado.abertos.clear();
@@ -1158,7 +1323,7 @@ $("limpar").onclick = () => { $("filtros").reset(); filtrar(); };
 for (const botao of document.querySelectorAll(".mais-filtros")) botao.onclick = () => {
   botao.setAttribute("aria-expanded", botao.parentElement.classList.toggle("aberto"));
 };
-const aoTopo = () => { scrollTo(0, 0); for (const e of document.querySelectorAll(".rolagem, #v-prof, #v-resumo, #v-arb")) e.scrollTop = 0; };
+const aoTopo = () => { scrollTo(0, 0); for (const e of document.querySelectorAll(".rolagem, #v-prof, #v-resumo, #v-arb, #v-lista")) e.scrollTop = 0; };
 $("anterior").onclick = () => { estado.pagina--; desenhar(); aoTopo(); };
 $("proxima").onclick = () => { estado.pagina++; desenhar(); aoTopo(); };
 document.querySelector("thead").onclick = e => {
@@ -1171,6 +1336,8 @@ document.querySelector("thead").onclick = e => {
 $("linhas").onclick = e => {
   const estrela = e.target.closest("[data-fav]");
   if (estrela) { alternar(prefs.favoritos, +estrela.dataset.fav); $("f-fav").checked ? filtrar() : desenhar(); return; }
+  const comparar = e.target.closest("[data-comparar]");
+  if (comparar) { estado.comparar.add(+comparar.dataset.comparar); desenhar(); return; }
   const periodo = e.target.closest("button[data-periodo]");
   if (periodo) { estado.periodo = periodo.dataset.periodo; desenhar(); return; }
   const tr = e.target.closest("tr.abre");
@@ -1183,6 +1350,23 @@ $("minhas").onclick = e => {
   const b = e.target.closest("button[data-minha]");
   if (!b) return;
   alternar(prefs.profissoes, +b.dataset.minha); calcularReceitas(); desenharResumo();
+};
+$("v-lista").onchange = e => {
+  const campo = e.target.closest("[data-vezes]");
+  if (!campo) return;
+  prefs.lista[campo.dataset.vezes] = Math.max(1, Math.round(+campo.value) || 1);
+  guardarPrefs(); desenharLista();
+};
+$("v-lista").onclick = e => {
+  const tirar = e.target.closest("[data-tirar]");
+  if (tirar) { delete prefs.lista[tirar.dataset.tirar]; guardarPrefs(); desenharLista(); }
+};
+$("limpar-lista").onclick = () => { prefs.lista = {}; guardarPrefs(); desenharLista(); };
+$("copiar-lista").onclick = async () => {
+  const botao = $("copiar-lista");
+  try { await navigator.clipboard.writeText(textoLista); botao.textContent = "Copiada"; }
+  catch { botao.textContent = "Não deu para copiar"; }
+  setTimeout(() => { botao.textContent = "Copiar lista"; }, 1500);
 };
 let esperaArb;
 $("filtros-arb").oninput = () => { clearTimeout(esperaArb); esperaArb = setTimeout(filtrarArb, 120); };
@@ -1198,6 +1382,12 @@ $("cab-prof").onclick = e => {
   filtrarProf();
 };
 $("linhas-prof").onclick = e => {
+  const naLista = e.target.closest("[data-lista]");
+  if (naLista) {
+    const rid = naLista.dataset.lista;
+    prefs.lista[rid] ? delete prefs.lista[rid] : prefs.lista[rid] = 1;
+    guardarPrefs(); desenharProf(); return;
+  }
   const periodo = e.target.closest("button[data-periodo]");
   if (periodo) { estado.periodo = periodo.dataset.periodo; desenharProf(); return; }
   const tr = e.target.closest("tr.abre");

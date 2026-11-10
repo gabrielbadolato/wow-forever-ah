@@ -3,4 +3,5 @@ segredos/
 __pycache__/
 *.pyc
 site/dados/
+site/addon/
 .pages/

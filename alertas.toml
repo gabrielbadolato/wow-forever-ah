@@ -1,0 +1,22 @@
+# Alertas no Discord. Conferidos a cada foto nova da casa de leilões.
+#
+# Para ligar: 1) crie um webhook no canal do Discord (Editar canal > Integrações > Webhooks)
+#             2) cole a URL, sozinha, no arquivo segredos/discord_webhook (permissão 600)
+#             3) tire o "#" das regras abaixo ou escreva as suas
+#
+# Cada regra avisa quando passa a valer e lembra de novo depois de 24 h se continuar valendo.
+# item: nome exato em inglês ou o número do item. Preços em ouro.
+# casa: opcional; sem ela vale a casa_padrao do config.toml.
+
+# [[alerta]]
+# item = "Black Lotus"
+# abaixo = 50          # menor preço chegou a 50g ou menos
+
+# [[alerta]]
+# item = "Arcanite Bar"
+# acima = 40           # menor preço chegou a 40g ou mais (hora de vender)
+
+# [[alerta]]
+# item = 7078          # Essence of Fire
+# queda = 25           # 25% ou mais abaixo da média dos últimos 7 dias
+# casa = 116

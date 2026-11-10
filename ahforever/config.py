@@ -20,6 +20,8 @@ class Config:
     repositorio_pages: str = ""
     chave_pages: Path | None = None
     pasta_pages: Path | None = None
+    alertas: Path | None = None
+    webhook_discord: Path | None = None
 
 
 def carregar(caminho=None):
@@ -41,6 +43,8 @@ def carregar(caminho=None):
         repositorio_pages=bruto.get("repositorio_pages", ""),
         chave_pages=base / bruto.get("chave_pages", "segredos/pages_deploy_key"),
         pasta_pages=base / bruto.get("pasta_pages", ".pages"),
+        alertas=base / bruto.get("alertas", "alertas.toml"),
+        webhook_discord=base / bruto.get("webhook_discord", "segredos/discord_webhook"),
     )
 
 
