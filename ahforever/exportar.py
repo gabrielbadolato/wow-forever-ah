@@ -138,6 +138,19 @@ def _receitas(con):
     return {"profissoes": profissoes, "receitas": receitas, "npc": npc}
 
 
+def _vendas(con, ruleset_id, casa_id, agora):
+    """Vendas estimadas dos últimos 7 dias por item, e quantas horas de observação há por trás delas."""
+    desde = (agora - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    casa = (ruleset_id, casa_id, desde)
+    segundos = con.execute(
+        "SELECT SUM(intervalo_vendas) FROM coletas WHERE ruleset_id = ? AND casa_id = ? "
+        "AND coletado_em >= ? AND tipo = 'itens'", casa).fetchone()[0] or 0
+    itens = dict(con.execute(
+        "SELECT v.item_id, SUM(v.quantidade) FROM vendas v JOIN coletas c ON c.id = v.coleta_id "
+        "WHERE c.ruleset_id = ? AND c.casa_id = ? AND c.coletado_em >= ? GROUP BY 1", casa))
+    return {"horas": round(segundos / 3600, 1), "itens": itens}
+
+
 # Uma linha por (foto, item), somando as variantes: menor preço e quantidade total.
 SERIE = (
     "SELECT c.coletado_em AS quando, p.item_id AS item_id, MIN(p.preco_min) AS minimo, "
@@ -227,7 +240,8 @@ def exportar(cfg):
         if not linhas:
             continue
         arquivo = f"casa-{ruleset_id}-{casa_id}.json"
-        _gravar(destino / arquivo, {"coletado_em": coletado_em, "linhas": linhas})
+        _gravar(destino / arquivo, {"coletado_em": coletado_em, "linhas": linhas,
+                                    "vendas": _vendas(con, ruleset_id, casa_id, agora)})
         horas, meses = _historico(con, destino, ruleset_id, casa_id, agora.strftime("%Y-%m-%d"))
         casas.append({"ruleset": ruleset_id, "id": casa_id, "nome": nome,
                       "coletado_em": coletado_em, "itens": len(linhas), "arquivo": arquivo,

@@ -1,8 +1,10 @@
 import argparse
 import gzip
+import json
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
-from . import banco, bonus, catalogo, config, exportar, publicar, receitas
+from . import banco, bonus, catalogo, config, exportar, publicar, receitas, vendas
 from .api import ClienteBlizzard, ErroAPI
 from .resumo import resumir
 
@@ -33,6 +35,30 @@ def _anuncios(dados):
     return anuncios if isinstance(anuncios, list) else []
 
 
+# Acima disto entre duas fotos, expirações se misturam demais com vendas.
+INTERVALO_MAXIMO_VENDAS = 2.5 * 3600
+
+
+def _instante(last_modified, coletado_em):
+    """Quando a Blizzard gerou a foto; sem o cabeçalho, vale a hora em que foi coletada."""
+    if last_modified:
+        try:
+            return parsedate_to_datetime(last_modified)
+        except ValueError:
+            pass
+    return datetime.strptime(coletado_em, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+
+
+def _foto_guardada(cfg, ruleset_id, casa_id, tipo, coletado_em):
+    """Anúncios da foto bruta guardada naquela coleta, ou None se ela já foi descartada."""
+    carimbo = coletado_em.replace(":", "").replace("-", "")
+    arquivo = cfg.pasta_brutos / f"r{ruleset_id}-c{casa_id}-{tipo}-{carimbo}.json.gz"
+    if not arquivo.exists():
+        return None
+    with gzip.open(arquivo) as f:
+        return _anuncios(json.load(f))
+
+
 def _guardar_bruto(cfg, ruleset_id, casa_id, tipo, coletado_em, corpo):
     if cfg.brutos_por_casa <= 0:
         return
@@ -48,19 +74,25 @@ def _guardar_bruto(cfg, ruleset_id, casa_id, tipo, coletado_em, corpo):
 
 def coletar_casa(api, con, cfg, ruleset_id, casa_id, tipo, agora):
     """Baixa a foto de uma casa e grava o resumo. Devolve o nº de anúncios ou None se não mudou."""
-    last_modified, sha_anterior = banco.ultima_coleta(con, ruleset_id, casa_id, tipo)
+    last_modified, sha_anterior, coleta_anterior = banco.ultima_coleta(con, ruleset_id, casa_id, tipo)
     r = api.get(_caminho(ruleset_id, casa_id, tipo), desde=last_modified)
     if r.status != 200 or r.sha256 == sha_anterior:
         return None
     anuncios = _anuncios(r.dados)
-    banco.gravar_coleta(con, ruleset_id, casa_id, tipo, agora, r, len(anuncios), resumir(anuncios))
+    coleta_id = banco.gravar_coleta(con, ruleset_id, casa_id, tipo, agora, r, len(anuncios), resumir(anuncios))
+    if coleta_anterior:
+        intervalo = int((_instante(r.last_modified, agora) - _instante(last_modified, coleta_anterior)).total_seconds())
+        anteriores = _foto_guardada(cfg, ruleset_id, casa_id, tipo, coleta_anterior)
+        if anteriores is not None and 0 < intervalo <= INTERVALO_MAXIMO_VENDAS:
+            banco.gravar_vendas(con, coleta_id, intervalo,
+                                vendas.estimar(anteriores, anuncios, tipo == "commodities"))
     _guardar_bruto(cfg, ruleset_id, casa_id, tipo, agora, r.corpo)
     return len(anuncios)
 
 
-def coletar(cfg, api):
+def coletar(cfg, api, agora=None):
     con = banco.abrir(cfg.banco)
-    agora = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    agora = agora or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     for ruleset_id in cfg.rulesets:
         for casa_id, nome in listar_casas(api, ruleset_id, cfg.filtro_casas):
             with con:

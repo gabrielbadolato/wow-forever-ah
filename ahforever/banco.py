@@ -54,6 +54,17 @@ CREATE TABLE IF NOT EXISTS itens (
     bruto           TEXT  -- resposta completa da API (JSON), base dos tooltips e das receitas
 );
 
+-- Vendas estimadas entre a foto anterior e esta (ver vendas.py). valor em cobre.
+CREATE TABLE IF NOT EXISTS vendas (
+    coleta_id  INTEGER NOT NULL REFERENCES coletas (id),
+    item_id    INTEGER NOT NULL,
+    variante   TEXT NOT NULL DEFAULT '',
+    quantidade INTEGER NOT NULL,
+    valor      INTEGER NOT NULL,
+    PRIMARY KEY (coleta_id, item_id, variante)
+) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS vendas_item ON vendas (item_id, coleta_id);
+
 -- Receitas de profissão. reagentes é JSON: [[item_id, quantidade], ...].
 CREATE TABLE IF NOT EXISTS receitas (
     receita_id    INTEGER PRIMARY KEY,
@@ -78,6 +89,9 @@ def abrir(caminho):
     # Bancos criados antes de a coluna existir.
     if "bruto" not in [c[1] for c in con.execute("PRAGMA table_info(itens)")]:
         con.execute("ALTER TABLE itens ADD COLUMN bruto TEXT")
+    # Segundos cobertos pela estimativa de vendas desta foto; NULL = não estimada.
+    if "intervalo_vendas" not in [c[1] for c in con.execute("PRAGMA table_info(coletas)")]:
+        con.execute("ALTER TABLE coletas ADD COLUMN intervalo_vendas INTEGER")
     return con
 
 
@@ -90,13 +104,13 @@ def registrar_casa(con, ruleset_id, casa_id, nome):
 
 
 def ultima_coleta(con, ruleset_id, casa_id, tipo):
-    """Devolve (last_modified, sha256) da foto mais recente, ou (None, None)."""
+    """Devolve (last_modified, sha256, coletado_em) da foto mais recente, ou três None."""
     linha = con.execute(
-        "SELECT last_modified, sha256 FROM coletas "
+        "SELECT last_modified, sha256, coletado_em FROM coletas "
         "WHERE ruleset_id = ? AND casa_id = ? AND tipo = ? ORDER BY id DESC LIMIT 1",
         (ruleset_id, casa_id, tipo),
     ).fetchone()
-    return linha or (None, None)
+    return linha or (None, None, None)
 
 
 def gravar_coleta(con, ruleset_id, casa_id, tipo, coletado_em, resposta, n_anuncios, resumos):
@@ -116,3 +130,13 @@ def gravar_coleta(con, ruleset_id, casa_id, tipo, coletado_em, resposta, n_anunc
             ],
         )
     return cur.lastrowid
+
+
+def gravar_vendas(con, coleta_id, intervalo, vendas):
+    with con:
+        con.execute("UPDATE coletas SET intervalo_vendas = ? WHERE id = ?", (intervalo, coleta_id))
+        con.executemany(
+            "INSERT INTO vendas VALUES (?, ?, ?, ?, ?)",
+            [(coleta_id, item_id, variante, quantidade, valor)
+             for (item_id, variante), (quantidade, valor) in vendas.items()],
+        )

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import unittest
 from pathlib import Path
 
-from ahforever import banco, bonus, catalogo, coletor, exportar, receitas
+from ahforever import banco, bonus, catalogo, coletor, exportar, receitas, vendas
 from ahforever.api import Resposta
 from ahforever.config import Config
 from ahforever.resumo import chave_variante, resumir
@@ -48,13 +48,14 @@ class ApiFalsa:
         self.pedidos = []
 
     regiao = "us"
+    last_modified = "Mon, 09 Nov 2026 12:00:00 GMT"
 
     def get(self, caminho, tipo_namespace="dynamic", desde=None, namespace=None):
         self.pedidos.append((caminho, desde))
         dados = self.rotas.get((caminho, namespace) if namespace else caminho)
         if dados is None:
             return Resposta(404, None, b"", None)
-        return Resposta(200, dados, json.dumps(dados).encode(), "Mon, 09 Nov 2026 12:00:00 GMT")
+        return Resposta(200, dados, json.dumps(dados).encode(), self.last_modified)
 
 
 INDICE = {"auctions": [
@@ -140,7 +141,8 @@ class TesteColetor(unittest.TestCase):
         fotos = [("2026-11-08T10:20:00Z", 100, 5), ("2026-11-08T11:20:00Z", 80, 7),
                  ("2026-11-09T10:20:00Z", 90, 4)]
         for i, (quando, preco, quantidade) in enumerate(fotos, 1):
-            con.execute("INSERT INTO coletas VALUES (?, 2, 113, 'itens', ?, NULL, ?, 3)", (i, quando, str(i)))
+            con.execute("INSERT INTO coletas (id, ruleset_id, casa_id, tipo, coletado_em, sha256, n_anuncios) "
+                        "VALUES (?, 2, 113, 'itens', ?, ?, 3)", (i, quando, str(i)))
             # Duas variantes do mesmo item viram um ponto só: menor preço, quantidades somadas.
             con.execute("INSERT INTO precos VALUES (?, 720, '', ?, ?, ?, 1)", (i, preco, preco, quantidade))
             con.execute("INSERT INTO precos VALUES (?, 720, 'b1', ?, ?, 1, 1)", (i, preco + 50, preco + 50))
@@ -224,6 +226,37 @@ class TesteColetor(unittest.TestCase):
         self.assertEqual(dados["pontos"], {36: {"UNCOMMON": [14.0, 11.0, 8.0, 6.0, 4.0],
                                                 "RARE": [20.0, 17.0, 14.0, 12.0, 10.0],
                                                 "EPIC": [26.0, 23.0, 20.0, 18.0, 16.0]}})
+
+    def test_vendas_de_itens_ignoram_expirados_e_cancelamentos_caros(self):
+        def anuncio(id, preco, tempo="LONG"):
+            return {"id": id, "item": {"id": 720}, "buyout": preco, "quantity": 1, "time_left": tempo}
+        antes = [anuncio(1, 100), anuncio(2, 110), anuncio(3, 105, "SHORT"), anuncio(4, 900), anuncio(5, 120),
+                 {"id": 6, "item": {"id": 720}, "bid": 50, "quantity": 1, "time_left": "LONG"}]
+        depois = [anuncio(5, 120)]
+        # 1 e 2 venderam; 3 pode ter expirado; 4 custava muito acima do mercado; 6 só tinha lance.
+        self.assertEqual(vendas.estimar(antes, depois, commodities=False), {(720, ""): [2, 210]})
+
+    def test_vendas_de_commodities_contam_parciais_e_respeitam_o_mais_barato(self):
+        def pilha(id, preco, quantidade, tempo="LONG"):
+            return {"id": id, "item": {"id": 2589}, "unit_price": preco, "quantity": quantidade, "time_left": tempo}
+        antes = [pilha(1, 10, 50), pilha(2, 11, 40), pilha(3, 12, 30), pilha(4, 30, 20)]
+        # A 1 foi comprada inteira e a 2 em parte. A 3 continua, então a 4 (mais cara) saiu por cancelamento.
+        depois = [pilha(2, 11, 25), pilha(3, 12, 30)]
+        self.assertEqual(vendas.estimar(antes, depois, commodities=True), {(2589, ""): [65, 50 * 10 + 15 * 11]})
+
+    def test_coleta_seguinte_grava_as_vendas_estimadas(self):
+        self.api.rotas["/data/wow/ruleset/2/auctions/113"] = {**CASA_113, "auctions": [
+            {"id": 1, "item": {"id": 720}, "buyout": 5000, "quantity": 1, "time_left": "LONG"}]}
+        instantes = iter(["2026-11-10T10:20:00Z", "2026-11-10T11:20:00Z"])
+        relogio = lambda cfg, api: coletor.coletar(cfg, api, agora=next(instantes))
+        relogio(self.cfg, self.api)
+        # O intervalo vem da hora em que a Blizzard gerou cada foto, não da hora da coleta.
+        self.api.rotas["/data/wow/ruleset/2/auctions/113"] = {**CASA_113, "auctions": []}
+        self.api.last_modified = "Mon, 09 Nov 2026 13:00:00 GMT"
+        relogio(self.cfg, self.api)
+        self.assertEqual(self.consultar("SELECT item_id, quantidade, valor FROM vendas"), [(720, 1, 5000)])
+        self.assertEqual(self.consultar(
+            "SELECT intervalo_vendas FROM coletas WHERE tipo = 'itens' AND casa_id = 113 ORDER BY id"), [(None,), (3600,)])
 
 
 if __name__ == "__main__":

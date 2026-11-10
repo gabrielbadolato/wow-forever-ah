@@ -39,3 +39,12 @@ Rulesets e casas coletadas ficam em `config.toml`.
 - `dados/brutos/`: últimas fotos brutas de cada casa, comprimidas.
 
 `preco_mercado` é a média das 15% unidades mais baratas de cada item.
+
+## Vendas estimadas
+
+A API mostra anúncios, não vendas. A cada coleta, `ahforever/vendas.py` compara
+a foto nova com a anterior: o que sumiu sem poder ter expirado conta como venda,
+tirando os cancelamentos mais prováveis (item bem acima do mercado; commodity
+mais cara que outra que continua à venda). O resultado vai para a tabela
+`vendas`, e `coletas.intervalo_vendas` guarda quantos segundos cada estimativa
+cobre. É uma estimativa conservadora, não um registro de vendas.
