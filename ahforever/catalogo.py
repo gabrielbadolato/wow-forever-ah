@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
 from . import banco
+from .api import ErroAPI
 
 # O cadastro do Forever ainda tem buracos; os itens que faltam quase sempre
 # existem com o mesmo id nos namespaces do Classic e do Retail.
@@ -77,6 +78,46 @@ def pendentes(con, agora):
         "OR (i.fonte IS NOT NULL AND i.bruto IS NULL) ORDER BY 1",
         (limite,),
     )]
+
+
+def traduzir(cfg, api_pt, reserva_pt=None, limite=None):
+    """Busca o nome em português dos itens já cadastrados que ainda não o têm.
+
+    `api_pt` é um cliente com idioma pt_BR; `reserva_pt(item_id)` devolve o nome para os
+    itens que vieram de fora da API da Blizzard. Só o nome: o resto do cadastro fica em inglês.
+    """
+    con = banco.abrir(cfg.banco)
+    faltam = con.execute("SELECT item_id, fonte FROM itens WHERE fonte IS NOT NULL AND nome_pt IS NULL "
+                         "ORDER BY 1").fetchall()[:limite]
+
+    def nome(linha):
+        item_id, fonte = linha
+        if fonte.startswith("static-"):
+            try:
+                r = api_pt.get(f"/data/wow/item/{item_id}", namespace=fonte)
+            except ErroAPI:
+                # Falha passageira: fica sem nome e entra de novo na próxima rodada.
+                return item_id, None
+            return item_id, (r.dados or {}).get("name") or ""
+        return item_id, (reserva_pt and reserva_pt(item_id)) or ""
+
+    # Grava em lotes curtos: a busca leva minutos e o banco não pode ficar travado para a coleta.
+    achados, lote = 0, []
+    with ThreadPoolExecutor(PARALELOS) as pool:
+        for item_id, texto in pool.map(nome, faltam):
+            if texto is None:
+                continue
+            achados += bool(texto)
+            lote.append((texto, item_id))
+            if len(lote) >= 200:
+                with con:
+                    con.executemany("UPDATE itens SET nome_pt = ? WHERE item_id = ?", lote)
+                lote = []
+    with con:
+        con.executemany("UPDATE itens SET nome_pt = ? WHERE item_id = ?", lote)
+    con.close()
+    if faltam:
+        print(f"catálogo: {achados} de {len(faltam)} nomes em português")
 
 
 def catalogar(cfg, api, limite=None, reserva=None):

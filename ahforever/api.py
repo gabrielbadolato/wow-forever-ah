@@ -75,6 +75,12 @@ class ClienteBlizzard:
                 headers=cabecalhos,
                 timeout=TEMPO_LIMITE,
             )
+            # 401 no meio de uma rodada longa: o token caiu antes da hora; pede outro e tenta de novo.
+            if r.status_code == 401:
+                with self._trava_token:
+                    self._token = None
+                cabecalhos["Authorization"] = f"Bearer {self._obter_token()}"
+                continue
             # 429 = limite de pedidos; 5xx costuma ser passageiro.
             if r.status_code != 429 and r.status_code < 500:
                 break

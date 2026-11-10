@@ -177,6 +177,12 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
 .comparar td, .comparar th { padding: 3px 10px; font-size: 13px; }
 .comparar tr.aqui td { color: var(--ouro); }
 #atualizado a { color: var(--ouro-fosco); }
+#idioma { position: absolute; right: 10px; top: 5px; cursor: pointer; padding: 2px 8px; border: 1px solid #000; border-radius: 3px; font: 11px var(--titulo);
+  color: var(--ouro-fosco); background: linear-gradient(#3b3b3b, #272727); box-shadow: inset 0 0 0 1px rgba(110, 110, 110, .3); }
+.acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; max-width: 800px; margin-top: 10px; font-size: 13px; color: var(--fraco); }
+.acoes input { width: 74px; }
+#agora td.tipo-acao { color: var(--fraco); font: 12px Arial, sans-serif; white-space: nowrap; }
+#agora tr { cursor: pointer; }
 #v-lista input[type=number] { width: 70px; }
 .nota { flex: none; margin: 0; padding: 7px 12px; font-size: 12px; color: var(--fraco); border-bottom: 1px solid #000; background: #161616; }
 #aviso, .aviso { padding: 30px; text-align: center; color: var(--fraco); }
@@ -230,6 +236,8 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
   .barra-titulo label { margin-left: auto; font-size: 0; min-width: 0; }
   .barra-titulo select { max-width: 100%; min-width: 0; width: 124px; font-size: 14px; padding: 7px 4px; }
   .barra-titulo .sub { display: none; }
+  #idioma { position: static; margin-left: auto; padding: 8px 10px; font-size: 12px; }
+  .barra-titulo label { margin-left: 0; }
   #atualizado { display: none; }
   main { grid-template-columns: minmax(0, 1fr); padding: 6px; }
   #categorias { flex-direction: row; overflow-x: auto; max-height: none; scrollbar-width: none; }
@@ -290,6 +298,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
   <div class="barra-titulo">
     <span class="emblema" aria-hidden="true"></span>
     <h1>Casa de Leilões</h1><span class="sub">WoW Forever</span>
+    <button type="button" id="idioma" title="Troca o idioma dos nomes dos itens. O resto (tooltips, categorias) fica em inglês.">PT</button>
   </div>
   <div class="barra-abas">
     <nav id="abas" aria-label="Seções">
@@ -383,6 +392,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
           <th data-ordem="lucro" class="num">Lucro</th>
           <th data-ordem="margem" class="num sd">Margem</th>
           <th data-ordem="qtd" class="num">À venda</th>
+          <th data-ordem="ate" class="num sd" title="Quantas vezes vale fabricar de uma tacada: além disso o material encarece (ou acaba) e o lucro total para de crescer">Vale fabricar</th>
           <th data-ordem="vdia" class="num sd" title="Vendas estimadas do item pronto por dia">Vendas/dia</th>
           <th data-ordem="lucroDia" class="num sd" title="Lucro por fabricação vezes o que o mercado absorve por dia">Lucro/dia</th>
         </tr></thead>
@@ -393,7 +403,11 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
     </div>
   </section>
   <section class="painel" id="v-resumo" hidden>
-    <h2 class="titulo-bloco">Os 10 itens mais lucrativos de cada profissão</h2>
+    <h2 class="titulo-bloco">Resumo</h2>
+    <p class="nota" id="nota-agora">O que rende mais agora nesta casa, somando fabricar, vender ao NPC, pechinchas e revenda em outra casa do mercado.
+      O lucro é o total da quantidade indicada, limitada ao que o mercado vende num dia. É estimativa: confira antes de gastar.</p>
+    <div class="cartoes" style="grid-template-columns: minmax(0, 1fr)"><article class="cartao"><h2>O que fazer agora</h2><table><tbody id="agora"></tbody></table></article></div>
+    <h2 class="titulo-bloco">Por profissão</h2>
     <p class="nota" id="nota-resumo"></p>
     <div id="minhas" class="chips"></div>
     <div id="resumo" class="cartoes"></div>
@@ -460,6 +474,17 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
       </div>
     </div>
     <div id="aviso-lista" class="aviso" hidden></div>
+    <h2 class="titulo-bloco">Carteira</h2>
+    <p class="nota" id="nota-carteira"></p>
+    <div class="rolagem">
+      <table>
+        <thead><tr><th>Item</th><th class="num">Tenho</th><th class="num sd">Paguei (un.)</th><th class="num sd">Agora (un.)</th>
+          <th class="num" title="Menor preço de agora menos a taxa da casa, menos o que você pagou, vezes a quantidade">Se vender agora</th>
+          <th class="num sd" title="Preço de agora contra a média de 7 dias">7 dias</th><th></th></tr></thead>
+        <tbody id="linhas-carteira"></tbody>
+      </table>
+    </div>
+    <div id="aviso-carteira" class="aviso" hidden></div>
   </section>
 </main>
 </div>
@@ -485,13 +510,15 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", 
 
 let meta, catalogo, bonusJogo, grupos = [], filtrados = [];
 // Preferências de quem usa, guardadas só neste navegador.
-const prefs = {profissoes: [], favoritos: [], lista: {}, habilidade: {}, modo: null, casa: null};
+const prefs = {profissoes: [], favoritos: [], lista: {}, habilidade: {}, modo: null, casa: null, carteira: [], idioma: "en"};
 try { Object.assign(prefs, JSON.parse(localStorage.getItem("ah-forever") || "{}")); } catch {}
 const guardarPrefs = () => { try { localStorage.setItem("ah-forever", JSON.stringify(prefs)); } catch {} };
 const alternar = (lista, id) => { const i = lista.indexOf(id); i < 0 ? lista.push(id) : lista.splice(i, 1); guardarPrefs(); };
 let casaAtual, vendasCasa = {horas: 0, itens: {}};
 // Horas de observação para mostrar vendas por dia e para ranquear por elas.
 const HORAS_PARA_MOSTRAR = 2, HORAS_PARA_RANQUEAR = 6, HORAS_DE_ATRASO = 2, HORAS_DE_PANE = 4;
+// A coleta roda a cada 20 minutos; passando disto sem carimbo novo, parou.
+const MINUTOS_SEM_CHECAR = 70;
 const porDia = v => v == null ? "–" : v >= 10 ? Math.round(v).toLocaleString("pt-BR") : v.toLocaleString("pt-BR", {maximumFractionDigits: 1});
 const estado = {classe: null, sub: null, slot: null, ordem: "nome", sentido: 1, pagina: 0, abertos: new Set(), comparar: new Set(), periodo: "7d", modo: "leiloes"};
 
@@ -660,8 +687,11 @@ function caixaHistorico(id) {
   const botoes = Object.entries(PERIODOS).map(([k, nome]) =>
     `<button type="button" data-periodo="${k}" class="${k === estado.periodo ? "ativo" : ""}">${nome}</button>`).join(" ");
   return `<tr class="detalhe"><td colspan="8">${semHover ? `<div class="atributos" data-id="${id}"></div>` : ""}${histHtml(id, botoes)}
-    <div class="comparar" data-id="${id}">${estado.comparar.has(id) ? '<div class="vazio">Carregando…</div>' : `<button class="acao" type="button" data-comparar="${id}">Comparar com as outras casas</button>`}
-      <button class="acao" type="button" data-link="${id}" title="Copia um endereço que abre a página direto neste item">Copiar link</button></div></td></tr>`;
+    <div class="comparar" data-id="${id}">${estado.comparar.has(id) ? '<div class="vazio">Carregando…</div>' : `<button class="acao" type="button" data-comparar="${id}">Comparar com as outras casas</button>`}</div>
+    <div class="acoes"><button class="acao" type="button" data-link="${id}" title="Copia um endereço que abre a página direto neste item">Copiar link</button>
+      <span>Comprei <input type="number" min="1" step="1" value="1" aria-label="Quantidade comprada"> por
+      <input type="number" min="0" step="any" value="${((porItem.get(id)?.min ?? 0) / 10000).toFixed(4).replace(/\.?0+$/, "")}" aria-label="Preço pago por unidade, em ouro"> de ouro cada</span>
+      <button class="acao" type="button" data-comprei="${id}">Pôr na carteira</button></div></td></tr>`;
 }
 function histHtml(id, botoes) {
   botoes ??= Object.entries(PERIODOS).map(([k, nome]) =>
@@ -718,11 +748,18 @@ function linhasComVariante(base, d) {
 }
 
 // ---- Tooltip com os atributos do item ----
-let tooltips;
 const semHover = matchMedia("(hover: none), (max-width: 760px)").matches;
-function carregarTooltips() {
-  tooltips ??= json("dados/tooltips.json").catch(e => { tooltips = undefined; throw e; });
-  return tooltips;
+// Os tooltips vêm em partes (id % n); baixa só as dos itens pedidos, ou todas se não vier lista.
+const partesTooltips = new Map(), tooltipsBaixados = {};
+function carregarTooltips(ids) {
+  const n = meta.partes_tooltips || 16;
+  const partes = ids ? [...new Set(ids.map(id => id % n))] : [...Array(n).keys()];
+  return Promise.all(partes.map(parte => {
+    if (!partesTooltips.has(parte))
+      partesTooltips.set(parte, json(`dados/tooltips-${parte}.json`).then(d => Object.assign(tooltipsBaixados, d))
+        .catch(e => { partesTooltips.delete(parte); throw e; }));
+    return partesTooltips.get(parte);
+  })).then(() => tooltipsBaixados);
 }
 function linhasTooltip(linhas) {
   return (linhas || []).map(([texto, classe, direita]) => direita
@@ -732,7 +769,7 @@ function linhasTooltip(linhas) {
 let dicaDe = null;
 async function mostrarDica(g, e, variante) {
   const chave = dicaDe = g.id + "|" + (variante ?? "");
-  const dados = await carregarTooltips().catch(() => null);
+  const dados = await carregarTooltips([g.id]).catch(() => null);
   if (dicaDe !== chave) return;
   const d = variante ? decifrar(g, variante) : null, base = dados && dados[g.id];
   $("dica").innerHTML = `<div class="titulo q-${g.qualidade}">${esc(g.nome + (d?.sufixo ? " " + d.sufixo : ""))}</div>
@@ -750,7 +787,7 @@ function moverDica(e) {
 }
 function preencherAtributos() {
   if (!semHover || !document.querySelector(".atributos")) return;
-  carregarTooltips().then(dados => {
+  carregarTooltips([...document.querySelectorAll(".atributos")].map(c => +c.dataset.id)).then(dados => {
     for (const caixa of document.querySelectorAll(".atributos")) {
       const linhas = linhasTooltip(dados[caixa.dataset.id]);
       caixa.innerHTML = linhas; caixa.hidden = !linhas;
@@ -795,6 +832,31 @@ function urlDoIcone(i) {
 const pct = v => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(Math.round(v)).toLocaleString("pt-BR") + "%";
 // Preço médio por unidade a que o item vendeu na casa, pelas vendas estimadas; null sem vendas.
 const vendeA = (vendas, id) => vendas.itens[id] > 0 && vendas.valores?.[id] ? Math.round(vendas.valores[id] / vendas.itens[id]) : null;
+// Degraus de preço da casa (custo de comprar n unidades de cada item): arquivo à parte, baixado
+// só pelas abas que fazem conta com quantidade. Sem ele, tudo cai no preço único de cada item.
+let degrausProntos = false;
+async function carregarDegraus() {
+  const casa = casaAtual;
+  if (degrausProntos || !casa.degraus) return;
+  const mapa = await json("dados/" + casa.degraus).catch(() => null);
+  if (!mapa || casa !== casaAtual) return;
+  // Só valem para a variante que veio numa linha só; juntar degraus de linhas diferentes não faz sentido.
+  for (const g of grupos) for (const v of g.variantes) v.degraus = v.linhas === 1 ? mapa[g.id + "|" + v.bruta] || null : null;
+  degrausProntos = true;
+}
+// Quantas unidades vale comprar para repassar a `alvo` cada, e o lucro total; no máximo `maximo` unidades.
+function melhorCompra(g, alvo, maximo = Infinity) {
+  let unidades = 0, lucro = 0;
+  for (const v of g.variantes) {
+    if (v.min == null || v.min >= alvo) continue;
+    // Sem degraus: ou o preço é um só (vale tudo o que há), ou não se sabe (conta uma unidade).
+    const todas = v.degraus || v.linhas > 1 ? 1 : Math.min(v.qtd, maximo);
+    let melhor = [todas, (alvo - v.min) * todas];
+    for (const [n, custo] of v.degraus || []) if (n <= maximo && n * alvo - custo > melhor[1]) melhor = [n, n * alvo - custo];
+    unidades += melhor[0]; lucro += melhor[1];
+  }
+  return {unidades, lucro: Math.round(lucro)};
+}
 // Custo de comprar q unidades no leilão, subindo pelos anúncios do mais barato ao mais caro.
 function custoNoLeilao(g, q) {
   const degraus = g.variantes.length === 1 ? g.variantes[0].degraus : null;
@@ -851,6 +913,32 @@ function precoReagente(id) {
   return melhor;
 }
 
+// Lucro de fabricar n vezes de uma tacada: o material do leilão é comprado do anúncio mais barato
+// ao mais caro. null se falta preço ou se não há material à venda para tanto.
+function lucroFabricando(l, n) {
+  if (l.bruto == null || l.custo == null) return null;
+  let custo = 0;
+  for (const p of l.partes) {
+    const q = p.q * n, g = porItem.get(p.id);
+    if (p.fonte !== "leilão" || !g) custo += p.preco * q;
+    else if (q > g.qtd) return null;
+    else custo += custoNoLeilao(g, q);
+  }
+  return Math.round(l.bruto * n - custo);
+}
+const PASSOS_FABRICAR = [1, 2, 3, 5, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300, 500, 1000];
+// Até quantas vezes o lucro total ainda cresce. limite: por que parou ("material" acabou ou "preço" subiu).
+function melhorLote(l) {
+  let melhor = null;
+  for (const n of l.recarga ? [1] : PASSOS_FABRICAR) {
+    const lucro = lucroFabricando(l, n);
+    if (lucro == null) { if (melhor) melhor.limite = "material"; break; }
+    if (melhor && lucro <= melhor.lucro) { melhor.limite = "preço"; break; }
+    melhor = {n, lucro};
+  }
+  return melhor && melhor.lucro > 0 ? melhor : null;
+}
+
 function calcularReceitas() {
   custos = new Map(); receitasDoItem = new Map();
   for (const r of receitas.receitas) receitasDoItem.set(r[4], [...(receitasDoItem.get(r[4]) || []), r]);
@@ -866,11 +954,17 @@ function calcularReceitas() {
     const lucro = completo && bruto != null ? bruto - custo : null;
     // Por dia, fabrica-se o que o mercado absorve, limitado pela recarga da receita.
     const horas = recarga(rid), vezes = g && g.vdia != null ? Math.min(g.vdia / feitos, horas ? 24 / horas : Infinity) : null;
-    return {rid, recarga: horas, profId, categoria: categoria || "", nome, busca: nome.toLowerCase(), item, feitos, partes,
+    // Com os nomes em português, a receita leva o nome do item que produz.
+    const exibido = prefs.idioma === "pt" && catalogo.itens[item]?.[10] ? catalogo.itens[item][0] : nome;
+    return {rid, recarga: horas, profId, categoria: categoria || "", nome: exibido, busca: (exibido + " " + nome).toLowerCase(), item, feitos, partes,
       custo: completo ? custo : null, bruto, lucro, margem: lucro != null && custo > 0 ? lucro / custo * 100 : null,
       qtd: g ? g.qtd : 0, vdia: g ? g.vdia : null,
       lucroDia: lucro != null && vezes != null ? Math.round(lucro * vezes) : null};
   });
+  for (const l of todasReceitas) {
+    const lote = l.lucro > 0 ? melhorLote(l) : null;
+    Object.assign(l, {ate: lote?.n ?? null, lucroLote: lote?.lucro ?? null, limite: lote?.limite ?? null});
+  }
 }
 
 function montarProfissoes() {
@@ -953,6 +1047,7 @@ function desenharProf() {
       <td class="num ${sinal}">${moedaOuTraco(l.lucro)}</td>
       <td class="num sd ${sinal}">${margem}</td>
       <td class="num">${l.qtd.toLocaleString("pt-BR")}</td>
+      <td class="num sd">${l.ate ? `até ${l.ate}` : "–"}</td>
       <td class="num sd">${porDia(l.vdia)}</td><td class="num sd ${sinal}">${moedaOuTraco(l.lucroDia)}</td></tr>`;
     if (!aberto) continue;
     const materiais = l.partes.map(p => {
@@ -961,7 +1056,10 @@ function desenharProf() {
         <td class="num">× ${p.q}</td><td class="num sd">${moedaOuTraco(p.preco)}</td>
         <td class="num">${moedaOuTraco(p.preco == null ? null : p.preco * p.q)}</td><td class="fonte">${p.fonte}</td></tr>${subMateriais(p)}`;
     }).join("");
-    h += `<tr class="detalhe"><td colspan="9"><div class="sm" style="margin-bottom:6px">Materiais ${moedaOuTraco(l.custo)} · venda líquida ${moedaOuTraco(l.bruto)}${l.lucroDia != null ? ` · lucro/dia ${moedaOuTraco(l.lucroDia)}` : ""}</div>
+    h += `<tr class="detalhe"><td colspan="10"><div class="sm" style="margin-bottom:6px">Materiais ${moedaOuTraco(l.custo)} · venda líquida ${moedaOuTraco(l.bruto)}${l.lucroDia != null ? ` · lucro/dia ${moedaOuTraco(l.lucroDia)}` : ""}</div>
+      ${l.ate ? `<div style="margin:0 0 8px">Vale fabricar até <strong>${l.ate}</strong> de uma vez: lucro total ${moeda(l.lucroLote)}.
+        ${l.limite === "material" ? "Para mais do que isso não há material à venda." : l.limite === "preço" ? "Depois disso o material encarece e o lucro total para de crescer." : ""}
+        ${l.vdia != null && l.ate * l.feitos > l.vdia ? `O mercado vende só ~${porDia(l.vdia)} por dia.` : ""}</div>` : ""}
       ${faixa ? `<div class="rotulo" style="margin:0 0 6px">Dá ponto de habilidade até ${faixa[1]} (amarela a partir de ${faixa[0]})</div>` : ""}
       <table class="reagentes">${materiais}</table>${semHover ? `<div class="atributos" data-id="${l.item}"></div>` : ""}${histHtml(l.item)}</td></tr>`;
   }
@@ -1019,13 +1117,13 @@ function desenharResumo() {
 
 async function abrirResumo() {
   $("resumo").innerHTML = '<div class="vazio">Carregando…</div>';
-  receitas ??= await json("dados/receitas.json");
-  calcularReceitas(); desenharResumo();
+  [receitas] = await Promise.all([receitas ?? json("dados/receitas.json"), carregarDegraus()]);
+  calcularReceitas(); desenharResumo(); desenharAgora();
 }
 
 async function abrirProfissoes() {
   $("aviso-prof").hidden = false; $("aviso-prof").textContent = "Carregando…";
-  receitas ??= await json("dados/receitas.json");
+  [receitas] = await Promise.all([receitas ?? json("dados/receitas.json"), carregarDegraus()]);
   prof.id ??= +Object.entries(receitas.profissoes).sort((a, b) => a[1].localeCompare(b[1]))[0][0];
   calcularReceitas(); montarProfissoes(); filtrarProf();
 }
@@ -1042,13 +1140,7 @@ function desenharOfertas() {
     cabecalho = `<th>Item</th><th class="num">Preço</th><th class="num sd">NPC paga</th><th class="num sd" title="Unidades à venda abaixo do preço de NPC">Unidades</th><th class="num" title="NPC paga menos o que você gasta, somando todas as unidades">Lucro total</th>`;
     linhas = grupos.filter(g => g.npc && g.min != null && g.min < g.npc && (!nome || g.busca.includes(nome))).map(g => {
       // Em cada variante, compra-se até o ponto em que a próxima unidade já custa mais do que o NPC paga.
-      let unidades = 0, lucro = 0;
-      for (const v of g.variantes) {
-        if (v.min == null || v.min >= g.npc) continue;
-        let melhor = [v.degraus ? 1 : v.qtd, (g.npc - v.min) * (v.degraus ? 1 : v.qtd)];
-        for (const [n, custo] of v.degraus || []) if (n * g.npc - custo > melhor[1]) melhor = [n, n * g.npc - custo];
-        unidades += melhor[0]; lucro += melhor[1];
-      }
+      const {unidades, lucro} = melhorCompra(g, g.npc);
       return {g, unidades, lucro};
     }).sort((a, b) => b.lucro - a.lucro).map(({g, unidades, lucro}) => `<tr class="item" data-id="${g.id}">
       <td class="nome">${iconeHtml(g)}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
@@ -1090,12 +1182,19 @@ function casaDoMercado(casa) {
 
 async function abrirArbitragem() {
   $("aviso-arb").hidden = false; $("aviso-arb").textContent = "Carregando…";
-  const aqui = {casa: casaAtual, itens: porItem, vendas: vendasCasa};
-  const outras = await Promise.all(meta.casas.filter(c => c.grupo === aqui.casa.grupo && c !== aqui.casa).map(casaDoMercado));
-  if (estado.modo !== "arbitragem" || casaAtual !== aqui.casa) return;
+  const aqui = await calcularArbitragem();
+  if (estado.modo !== "arbitragem" || !aqui) return;
   $("nota-arb").textContent = `Compra em ${rotulo(aqui.casa)} para revender nas outras casas do Mercado ${aqui.casa.grupo}, e o caminho inverso. ` +
     "Compra pelo preço de mercado da origem; venda pelo menor anúncio do destino ou, se for menor, pelo preço médio a que o item tem vendido lá, menos a taxa de lá (5%; 15% na neutra). " +
     "Só itens sem variantes. Quais casas formam um mercado é dedução, não dado da Blizzard: confira um preço no jogo antes de confiar.";
+  filtrarArb();
+}
+
+// Preenche linhasArb com as rotas entre a casa atual e as outras do mesmo mercado. Devolve a casa, ou null se ela mudou no caminho.
+async function calcularArbitragem() {
+  const aqui = {casa: casaAtual, itens: porItem, vendas: vendasCasa};
+  const outras = await Promise.all(meta.casas.filter(c => c.grupo === aqui.casa.grupo && c !== aqui.casa).map(casaDoMercado));
+  if (casaAtual !== aqui.casa) return null;
   // Variantes (sufixos) têm preços que não se comparam entre si.
   const simples = g => g && g.min != null && g.variantes.length === 1 && g.variantes[0].variante === "";
   linhasArb = [];
@@ -1114,7 +1213,66 @@ async function abrirArbitragem() {
         vdia: horas >= HORAS_PARA_MOSTRAR ? (destino.vendas.itens[id] || 0) / horas * 24 : null});
     }
   }
-  filtrarArb();
+  return aqui;
+}
+
+// ---- Resumo: "O que fazer agora", juntando todas as formas de lucro numa lista só ----
+function desenharAgora(comArbitragem) {
+  const corte = corteDaCasa(), entradas = [];
+  const porDiaOuTudo = (vdia, n) => vdia == null ? n : Math.min(n, Math.max(1, Math.floor(vdia)));
+  for (const l of todasReceitas) {
+    if (!l.ate || l.vdia === 0 || (prefs.profissoes.length && !prefs.profissoes.includes(l.profId))) continue;
+    const n = porDiaOuTudo(l.vdia == null ? null : l.vdia / l.feitos, l.ate), lucro = lucroFabricando(l, n);
+    if (lucro > 0) entradas.push({tipo: "Fabricar", modo: "profissoes", prof: l.profId, id: l.item, nome: l.nome, lucro, detalhe: `${n} × · ${receitas.profissoes[l.profId]}`});
+  }
+  for (const g of grupos) {
+    if (g.min == null) continue;
+    if (g.npc && g.min < g.npc) {
+      const {unidades, lucro} = melhorCompra(g, g.npc);
+      if (lucro > 0) entradas.push({tipo: "Vender ao NPC", modo: "ofertas", oferta: "npc", id: g.id, nome: g.nome, lucro, detalhe: `comprar ${unidades.toLocaleString("pt-BR")}`});
+    }
+    if (g.tend != null && g.tend <= -25 && g.vdia >= 1) {
+      const {unidades, lucro} = melhorCompra(g, Math.round(g.media * (1 - corte)), Math.ceil(g.vdia));
+      if (lucro > 0) entradas.push({tipo: "Pechincha", modo: "ofertas", oferta: "media", id: g.id, nome: g.nome, lucro, detalhe: `comprar ${unidades.toLocaleString("pt-BR")} · ${pct(g.tend)}`});
+    }
+  }
+  if (comArbitragem) for (const l of linhasArb) {
+    if (l.origem !== casaAtual || l.margem < 20 || !(l.vdia >= 1)) continue;
+    const n = Math.min(l.qtd, Math.ceil(l.vdia));
+    entradas.push({tipo: "Outra casa", modo: "arbitragem", id: l.id, nome: l.g.nome, lucro: l.lucro * n, detalhe: `levar ${n.toLocaleString("pt-BR")} para ${rotulo(l.destino)}`});
+  }
+  entradas.sort((a, b) => b.lucro - a.lucro);
+  $("agora").innerHTML = entradas.slice(0, 12).map((e, n) => {
+    const i = infoItem(e.id);
+    return `<tr class="item" data-id="${e.id}" data-ir="${e.modo}" data-prof="${e.prof ?? ""}" data-oferta="${e.oferta ?? ""}" data-nome="${esc(e.nome)}"><td class="rank">${n + 1}</td>
+      <td class="nome">${iconeHtml(i)}<span><span class="q-${i.qualidade}">${esc(e.nome)}</span><span class="tipo">${esc(e.detalhe)}</span></span></td>
+      <td class="tipo-acao">${e.tipo}</td><td class="num pos">${moeda(e.lucro)}</td></tr>`;
+  }).join("") || '<tr><td class="vazio">Nada com lucro nos anúncios de agora.</td></tr>';
+  // As outras casas do mercado chegam depois; a lista é refeita quando chegam.
+  if (!comArbitragem) calcularArbitragem().then(aqui => { if (aqui && estado.modo === "resumo") desenharAgora(true); }).catch(() => {});
+}
+
+// ---- Carteira: o que você comprou e quanto vale agora ----
+function desenharCarteira() {
+  const corte = corteDaCasa();
+  let pago = 0, vale = 0;
+  $("linhas-carteira").innerHTML = prefs.carteira.map((c, n) => {
+    const g = porItem.get(c.id), i = infoItem(c.id), liquido = g?.min == null ? null : Math.round(g.min * (1 - corte));
+    const lucro = liquido == null ? null : (liquido - c.pago) * c.q;
+    pago += c.pago * c.q; vale += (liquido ?? 0) * c.q;
+    return `<tr class="item" data-id="${c.id}"><td class="nome">${iconeHtml(i)}<span><span class="q-${i.qualidade}">${esc(i.nome)}</span>
+        <span class="sm">paguei ${moeda(c.pago)} · agora ${g?.min == null ? "sem anúncio" : moeda(g.min)}${g?.tend != null ? ` · ${pct(g.tend)} na semana` : ""}</span></span></td>
+      <td class="num">${c.q.toLocaleString("pt-BR")}</td><td class="num sd">${moeda(c.pago)}</td>
+      <td class="num sd">${g?.min == null ? "–" : moeda(g.min)}</td>
+      <td class="num ${lucro == null ? "" : lucro >= 0 ? "pos" : "neg"}">${moedaOuTraco(lucro)}</td>
+      <td class="num sd ${g?.tend == null || Math.abs(g.tend) < 5 ? "" : g.tend > 0 ? "pos" : "neg"}">${pct(g?.tend)}</td>
+      <td><button type="button" class="fav" data-vendi="${n}" title="Tirar da carteira" aria-label="Tirar da carteira">✕</button></td></tr>`;
+  }).join("");
+  $("aviso-carteira").hidden = prefs.carteira.length > 0;
+  $("aviso-carteira").textContent = "A carteira está vazia. Na aba Leilões, abra um item e use \"Pôr na carteira\" para registrar o que comprou.";
+  $("nota-carteira").innerHTML = prefs.carteira.length
+    ? `Paguei ${moeda(pago)} · vendendo tudo agora em ${esc(rotulo(casaAtual))}, já sem a taxa: ${moeda(vale)} · resultado <span class="${vale - pago >= 0 ? "pos" : "neg"}">${moedaOuTraco(vale - pago)}</span>. Fica guardada só neste navegador.`
+    : "Registre o que comprou para revender e acompanhe quanto vale. Fica guardada só neste navegador.";
 }
 
 function filtrarArb() {
@@ -1193,7 +1351,8 @@ function desenharLista() {
 
 async function abrirLista() {
   $("aviso-lista").hidden = false; $("aviso-lista").textContent = "Carregando…"; $("bloco-lista").hidden = true;
-  receitas ??= await json("dados/receitas.json");
+  desenharCarteira();
+  [receitas] = await Promise.all([receitas ?? json("dados/receitas.json"), carregarDegraus()]);
   calcularReceitas(); desenharLista();
 }
 
@@ -1215,7 +1374,7 @@ async function mostrarModo() {
   else if (modo === "resumo") await abrirResumo();
   else if (modo === "arbitragem") await abrirArbitragem();
   else if (modo === "lista") await abrirLista();
-  else if (modo === "ofertas") desenharOfertas();
+  else if (modo === "ofertas") { await carregarDegraus(); desenharOfertas(); }
   else { montarCategorias(); desenhar(); }
 }
 function trocarModo(modo) { estado.modo = modo; mostrarModo().catch(falhou); }
@@ -1231,7 +1390,7 @@ function haQuanto(iso) {
 // Junta as variantes do mesmo item numa linha só.
 function agrupar(linhas) {
   const porItem = new Map();
-  for (const [id, variante, min, mercado, qtd, anuncios, degraus] of linhas) {
+  for (const [id, variante, min, mercado, qtd, anuncios] of linhas) {
     let g = porItem.get(id);
     if (!g) {
       const i = catalogo.itens[id];
@@ -1240,16 +1399,17 @@ function agrupar(linhas) {
                slot: i[6] === "ROBE" ? "CHEST" : i[6], icone: i[7], fonte: i[8], npc: i[9] || null}
             : {id, nome: `Item #${id} (sem cadastro)`, qualidade: null, nivel: null, req: null, classe: SEM_CADASTRO, sub: null};
       Object.assign(g, {min: null, mercado: null, qtd: 0, anuncios: 0, variantes: []});
-      g.busca = g.nome.toLowerCase();
+      // Com os nomes em português, a busca aceita os dois idiomas.
+      g.busca = (g.nome + " " + (i?.[10] || "")).toLowerCase();
       g.q = QUALIDADES.indexOf(g.qualidade);
       porItem.set(id, g);
     }
     // Só os bônus distinguem variantes; os modificadores (ex.: m28) não mudam o item.
     const chave = variante.split(";").filter(parte => parte[0] === "b").join(";");
     let v = g.variantes.find(x => x.variante === chave);
-    // Os degraus (custo de comprar n unidades) só valem se a variante veio numa linha só.
-    if (!v) g.variantes.push(v = {variante: chave, min: null, mercado: null, qtd: 0, anuncios: 0, degraus});
-    else v.degraus = null;
+    // bruta e linhas servem para casar a variante com os degraus de preço (ver carregarDegraus).
+    if (!v) g.variantes.push(v = {variante: chave, bruta: variante, linhas: 0, min: null, mercado: null, qtd: 0, anuncios: 0});
+    v.linhas++;
     v.qtd += qtd; v.anuncios += anuncios;
     if (min != null && (v.min == null || min < v.min)) { v.min = min; v.mercado = mercado; }
     g.qtd += qtd; g.anuncios += anuncios;
@@ -1409,13 +1569,18 @@ async function carregarCasa() {
   prefs.casa = casa.id; guardarPrefs();
   if (temVendas && prof.ordem === "lucro" && !prof.ordemEscolhida) prof.ordem = "lucroDia";
   const atraso = (Date.now() - new Date(dados.coletado_em)) / 3600e3;
-  $("velho").hidden = atraso < HORAS_DE_ATRASO;
-  // A página não sabe se a coleta rodou: atraso curto costuma ser a Blizzard, longo é defeito nosso.
-  $("velho").textContent = `Os preços estão com ${Math.floor(atraso)} h de atraso: ` +
-    (atraso < HORAS_DE_PANE ? "a Blizzard ainda não publicou preços novos." : "a coleta pode ter parado.");
+  // A coleta carimba cada rodada, com ou sem preço novo: carimbo recente e preço velho é atraso da
+  // Blizzard; carimbo velho é a coleta parada. Sem o carimbo, vale o palpite pelo tamanho do atraso.
+  const checagem = await json("dados/estado.json").catch(() => null);
+  const semChecar = checagem ? (Date.now() - new Date(checagem.checado_em)) / 60000 : null;
+  const parada = semChecar != null && semChecar > MINUTOS_SEM_CHECAR;
+  $("velho").hidden = atraso < HORAS_DE_ATRASO && !parada;
+  $("velho").textContent = parada ? `A coleta parou: a última checagem foi ${haQuanto(checagem.checado_em)}. Os preços são de ${haQuanto(dados.coletado_em)}.`
+    : `Os preços estão com ${Math.floor(atraso)} h de atraso: ` + (semChecar != null ? `a Blizzard ainda não publicou preços novos (a coleta checou há ${Math.round(semChecar)} min).`
+      : atraso < HORAS_DE_PANE ? "a Blizzard ainda não publicou preços novos." : "a coleta pode ter parado.");
   $("atualizado").innerHTML = `Dados coletados ${haQuanto(dados.coletado_em)} · ${new Date(dados.coletado_em).toLocaleString("pt-BR")}` +
     (meta.addon ? ` · <a href="${esc(meta.addon)}" download title="Mostra estes preços no tooltip dos itens dentro do jogo. Extraia em Interface/AddOns.">Addon para o jogo</a>` : "");
-  porItem.clear();
+  porItem.clear(); degrausProntos = false;
   for (const g of grupos) porItem.set(g.id, g);
   estado.abertos.clear();
   filtrar();
@@ -1425,6 +1590,12 @@ async function carregarCasa() {
 async function iniciar() {
   [meta, catalogo, bonusJogo] = await Promise.all([json("dados/meta.json"), json("dados/itens.json"),
     json("dados/bonus.json").catch(() => ({bonus: {}, pontos: {}}))]);
+  // Nomes em português: troca o nome no catálogo e guarda o inglês na posição 10, para a busca aceitar os dois.
+  $("idioma").textContent = prefs.idioma === "pt" ? "EN" : "PT";
+  if (prefs.idioma === "pt") {
+    const nomes = await json("dados/nomes-pt.json").catch(() => ({}));
+    for (const [id, nome] of Object.entries(nomes)) { const i = catalogo.itens[id]; if (i) { i[10] = i[0]; i[0] = nome; } }
+  }
   const mercados = [...new Set(meta.casas.map(c => c.grupo))].sort((a, b) => a - b);
   $("casa").innerHTML = mercados.map(n => `<optgroup label="Mercado ${n}">` + meta.casas.map((c, i) => c.grupo !== n ? "" :
     `<option value="${i}">${rotulo(c)}${c.id === meta.casa_padrao ? " (padrão)" : ""}</option>`).join("") + "</optgroup>").join("");
@@ -1440,6 +1611,7 @@ async function iniciar() {
   if (g) { $("f-nome").value = g.nome; filtrar(); estado.abertos.add(g.id); desenhar(); }
 }
 
+$("idioma").onclick = () => { prefs.idioma = prefs.idioma === "pt" ? "en" : "pt"; guardarPrefs(); location.reload(); };
 $("casa").onchange = () => carregarCasa().catch(falhou);
 $("abas").onclick = e => {
   const b = e.target.closest("button[data-modo]");
@@ -1476,6 +1648,16 @@ document.querySelector("thead").onclick = e => {
 $("linhas").onclick = e => {
   const estrela = e.target.closest("[data-fav]");
   if (estrela) { alternar(prefs.favoritos, +estrela.dataset.fav); $("f-fav").checked ? filtrar() : desenhar(); return; }
+  const comprei = e.target.closest("[data-comprei]");
+  if (comprei) {
+    const [q, ouro] = [...comprei.parentElement.querySelectorAll("input")].map(c => +c.value);
+    if (q >= 1 && ouro >= 0) {
+      prefs.carteira.push({id: +comprei.dataset.comprei, q: Math.round(q), pago: Math.round(ouro * 10000)});
+      guardarPrefs(); comprei.textContent = "Na carteira ✓";
+    }
+    return;
+  }
+  if (e.target.closest(".acoes input")) return;
   const link = e.target.closest("[data-link]");
   if (link) {
     const url = `${location.origin}${location.pathname}#item=${link.dataset.link}&casa=${casaAtual.id}`;
@@ -1495,7 +1677,7 @@ $("linhas").onclick = e => {
 $("minhas").onclick = e => {
   const b = e.target.closest("button[data-minha]");
   if (!b) return;
-  alternar(prefs.profissoes, +b.dataset.minha); calcularReceitas(); desenharResumo();
+  alternar(prefs.profissoes, +b.dataset.minha); calcularReceitas(); desenharResumo(); desenharAgora();
 };
 $("v-lista").onchange = e => {
   const campo = e.target.closest("[data-vezes]");
@@ -1504,6 +1686,8 @@ $("v-lista").onchange = e => {
   guardarPrefs(); desenharLista();
 };
 $("v-lista").onclick = e => {
+  const vendi = e.target.closest("[data-vendi]");
+  if (vendi) { prefs.carteira.splice(+vendi.dataset.vendi, 1); guardarPrefs(); desenharCarteira(); return; }
   const tirar = e.target.closest("[data-tirar]");
   if (tirar) { delete prefs.lista[tirar.dataset.tirar]; guardarPrefs(); desenharLista(); }
 };
@@ -1544,6 +1728,16 @@ $("linhas-prof").onclick = e => {
   const rid = +tr.dataset.rid;
   prof.abertos.has(rid) ? prof.abertos.delete(rid) : prof.abertos.add(rid);
   desenharProf();
+};
+// Cada linha do painel leva à aba onde aquela oportunidade aparece em detalhe.
+$("agora").onclick = e => {
+  const tr = e.target.closest("tr[data-ir]");
+  if (!tr) return;
+  const {ir, prof: profissao, oferta, nome} = tr.dataset;
+  if (ir === "profissoes") { prof.id = +profissao; prof.abertos.clear(); prof.materiaisAbertos.clear(); $("p-nome").value = nome; }
+  if (ir === "ofertas") { $("o-tipo").value = oferta; $("o-nome").value = nome; }
+  if (ir === "arbitragem") $("a-nome").value = nome;
+  trocarModo(ir); aoTopo();
 };
 $("resumo").onclick = e => {
   const b = e.target.closest("button[data-prof]");

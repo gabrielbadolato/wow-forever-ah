@@ -148,15 +148,19 @@ def main():
         exportar.exportar(cfg)
         publicar.publicar(cfg)
         return
-    # O timer tenta mais vezes do que a Blizzard publica; sem foto nova não há o que republicar.
+    # O timer tenta mais vezes do que a Blizzard publica. Sem foto nova, só o carimbo da
+    # checagem é publicado: é por ele que a página distingue atraso da Blizzard de coleta parada.
     if args.comando == "coletar" and not coletar(cfg, api):
-        print("nenhuma foto nova: nada a publicar")
+        print("nenhuma foto nova")
+        exportar.marcar_checagem(cfg)
+        publicar.publicar(cfg)
         return
     # Itens novos aparecem a cada coleta; uma falha aqui não invalida os preços já gravados.
     bonus.baixar(cfg, forcar=args.comando == "bonus")
     try:
         receitas.baixar(cfg, api, forcar=args.comando == "receitas")
         catalogo.catalogar(cfg, api, reserva=wowhead.Reserva)
+        catalogo.traduzir(cfg, ClienteBlizzard(cfg.regiao, client_id, segredo, "pt_BR"), wowhead.nome_pt)
     except ErroAPI as e:
         if args.comando != "coletar":
             raise SystemExit(f"catálogo: {e}")

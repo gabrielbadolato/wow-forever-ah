@@ -145,6 +145,12 @@ class TesteColetor(unittest.TestCase):
             [(720, "Brawler Gloves", 13, "Armor", "inv_gauntlets_05", "static-classic1x-us"),
              (2589, None, None, None, None, None)],
         )
+        # O nome em português vem da mesma fonte, com o cliente em pt_BR; sem resposta fica vazio e não é pedido de novo.
+        api_pt = ApiFalsa({("/data/wow/item/720", "static-classic1x-us"): {"name": "Luvas de Brigão"}})
+        catalogo.traduzir(self.cfg, api_pt)
+        catalogo.traduzir(self.cfg, api_pt)
+        self.assertEqual(self.consultar("SELECT nome_pt FROM itens WHERE item_id = 720"), [("Luvas de Brigão",)])
+        self.assertEqual(len(api_pt.pedidos), 1)
         # Quem não foi achado só é tentado de novo depois de alguns dias.
         n = len(self.api.pedidos)
         catalogo.catalogar(self.cfg, self.api)

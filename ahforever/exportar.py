@@ -29,9 +29,25 @@ def _catalogo(con):
     return {"classes": classes, "itens": itens}
 
 
+# Os tooltips vão em vários arquivos, para a página baixar só o pedaço do item apontado.
+PARTES_TOOLTIPS = 16
+
+
+def marcar_checagem(cfg, agora=None):
+    """Grava a hora em que a coleta rodou pela última vez, tenha ou não achado foto nova."""
+    destino = cfg.pasta_site / "dados"
+    destino.mkdir(parents=True, exist_ok=True)
+    agora = agora or datetime.now(timezone.utc)
+    _gravar(destino / "estado.json", {"checado_em": agora.strftime("%Y-%m-%dT%H:%M:%SZ")})
+
+
 def _casa(con, ruleset_id, casa_id):
-    """Linhas da foto mais recente de itens e de commodities da casa."""
-    linhas, coletado_em = [], None
+    """Linhas da foto mais recente de itens e de commodities da casa, e os degraus de preço à parte.
+
+    Os degraus ({"item|variante": [[n, custo], ...]}) pesam quase tanto quanto as linhas e só
+    servem a algumas abas, então vão num arquivo que a página baixa quando precisa.
+    """
+    linhas, degraus_da_casa, coletado_em = [], {}, None
     for tipo in ("itens", "commodities"):
         coleta = con.execute(
             "SELECT id, coletado_em FROM coletas WHERE ruleset_id = ? AND casa_id = ? "
@@ -39,14 +55,15 @@ def _casa(con, ruleset_id, casa_id):
         if not coleta:
             continue
         coletado_em = max(coletado_em or "", coleta[1])
-        # O sétimo campo (degraus de preço) só existe para quem tem mais de um preço à venda.
         for *linha, degraus in con.execute(
                 "SELECT p.item_id, p.variante, p.preco_min, p.preco_mercado, p.quantidade, p.n_anuncios, "
                 "d.degraus FROM precos p LEFT JOIN degraus d ON d.ruleset_id = ? AND d.casa_id = ? "
                 "AND d.tipo = ? AND d.item_id = p.item_id AND d.variante = p.variante "
                 "WHERE p.coleta_id = ?", (ruleset_id, casa_id, tipo, coleta[0])):
-            linhas.append(linha + ([json.loads(degraus)] if degraus else []))
-    return coletado_em, linhas
+            linhas.append(linha)
+            if degraus:
+                degraus_da_casa[f"{linha[0]}|{linha[1]}"] = json.loads(degraus)
+    return coletado_em, linhas, degraus_da_casa
 
 
 def _texto(valor):
@@ -266,7 +283,13 @@ def exportar(cfg):
     if resumidos or esvaziadas:
         print(f"banco: {resumidos} dias resumidos, {esvaziadas} fotos antigas esvaziadas")
     _gravar(destino / "itens.json", _catalogo(con))
-    _gravar(destino / "tooltips.json", _tooltips(con))
+    tooltips = _tooltips(con)
+    for parte in range(PARTES_TOOLTIPS):
+        _gravar(destino / f"tooltips-{parte}.json",
+                {i: linhas for i, linhas in tooltips.items() if i % PARTES_TOOLTIPS == parte})
+    (destino / "tooltips.json").unlink(missing_ok=True)
+    _gravar(destino / "nomes-pt.json", dict(con.execute(
+        "SELECT item_id, nome_pt FROM itens WHERE nome_pt IS NOT NULL AND nome_pt != ''")))
     _gravar(destino / "receitas.json", _receitas(con))
     if bonus.caminho(cfg).exists():
         _gravar(destino / "bonus.json", json.loads(bonus.caminho(cfg).read_text()))
@@ -277,7 +300,7 @@ def exportar(cfg):
         # A API não diz quais casas formam um mesmo mercado; a n-ésima de cada facção
         # (Aliança, Horda, neutra) parece ser do mesmo, pelo tamanho. Conta as vazias também.
         grupo = vistas[ruleset_id, nome] = vistas.get((ruleset_id, nome), 0) + 1
-        coletado_em, linhas = _casa(con, ruleset_id, casa_id)
+        coletado_em, linhas, degraus = _casa(con, ruleset_id, casa_id)
         if not linhas:
             continue
         arquivo = f"casa-{ruleset_id}-{casa_id}.json"
@@ -287,8 +310,10 @@ def exportar(cfg):
         if casa_id == cfg.casa_padrao and zip_do_addon is None:
             zip_do_addon = addon.gerar(cfg.pasta_site, f"{nome} {casa_id}", coletado_em, linhas, vendas)
         horas, meses = _historico(con, destino, ruleset_id, casa_id, agora.strftime("%Y-%m-%d"))
+        _gravar(destino / f"degraus-{ruleset_id}-{casa_id}.json", degraus)
         casas.append({"ruleset": ruleset_id, "id": casa_id, "nome": nome, "grupo": grupo,
                       "coletado_em": coletado_em, "itens": len(linhas), "arquivo": arquivo,
+                      "degraus": f"degraus-{ruleset_id}-{casa_id}.json",
                       "horas": horas, "meses": meses})
     con.close()
 
@@ -296,6 +321,8 @@ def exportar(cfg):
         "gerado_em": agora.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "casa_padrao": cfg.casa_padrao,
         "addon": zip_do_addon,
+        "partes_tooltips": PARTES_TOOLTIPS,
         "casas": casas,
     })
+    marcar_checagem(cfg, agora)
     print(f"site: {len(casas)} casas exportadas para {destino}")

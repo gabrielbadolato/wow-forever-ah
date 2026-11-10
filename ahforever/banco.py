@@ -124,6 +124,9 @@ def abrir(caminho):
     # Bancos criados antes de a coluna existir.
     if "bruto" not in [c[1] for c in con.execute("PRAGMA table_info(itens)")]:
         con.execute("ALTER TABLE itens ADD COLUMN bruto TEXT")
+    # Nome em português; NULL = ainda não buscado, '' = a fonte não tem.
+    if "nome_pt" not in [c[1] for c in con.execute("PRAGMA table_info(itens)")]:
+        con.execute("ALTER TABLE itens ADD COLUMN nome_pt TEXT")
     # Segundos cobertos pela estimativa de vendas desta foto; NULL = não estimada.
     if "intervalo_vendas" not in [c[1] for c in con.execute("PRAGMA table_info(coletas)")]:
         con.execute("ALTER TABLE coletas ADD COLUMN intervalo_vendas INTEGER")

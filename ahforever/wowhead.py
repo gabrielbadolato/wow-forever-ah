@@ -71,6 +71,16 @@ def linhas(tooltip):
     return saida
 
 
+def nome_pt(item_id):
+    """Nome do item em português, pelo mesmo tooltip; None se o Wowhead não tem."""
+    try:
+        r = requests.get(TOOLTIP.format(item_id), params={"locale": 8}, timeout=30,
+                         headers={"User-Agent": "wow-forever-ah (monitor pessoal de leilões)"})
+        return r.json().get("name") if r.status_code == 200 else None
+    except (requests.RequestException, ValueError):
+        return None
+
+
 class Reserva:
     """Busca no Wowhead os itens que a API da Blizzard não tem. Seguro para uso em várias threads."""
 
