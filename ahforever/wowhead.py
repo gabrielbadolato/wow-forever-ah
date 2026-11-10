@@ -46,14 +46,19 @@ def linhas(tooltip):
     t = re.sub(r'<table width="100%"><tr><td>(.*?)</td><th>(.*?)</th></tr></table>', r"\n\1\t\2\n", t, flags=re.S)
     t = re.sub(r"<br\s*/?>|</?div[^>]*>|</?t[dr][^>]*>|</?table[^>]*>", "\n", t)
     t = html.unescape(re.sub(r"<!--.*?-->|<[^>]+>", "", t, flags=re.S)).replace("\xa0", " ")
-    saida = []
+    saida, no_conjunto = [], False
     for linha in t.split("\n"):
         texto, _, direita = (parte.strip() for parte in linha.partition("\t"))
         texto = re.sub(r"\s+", " ", texto)
         if not texto:
             continue
-        if texto.startswith("Item Level") or re.search(r"\(\d+/\d+\)$", texto):
+        if re.search(r"\(\d+/\d+\)$", texto):
+            # Daqui até o preço vêm as peças e os bônus do conjunto, em cinza no jogo.
+            classe, no_conjunto = "a", True
+        elif texto.startswith("Item Level"):
             classe = "a"
+        elif no_conjunto:
+            classe = "c"
         elif texto.startswith(EFEITOS):
             classe = "v"
         elif texto.startswith("Sell Price") or re.match(r"\(\d+\) Set", texto):

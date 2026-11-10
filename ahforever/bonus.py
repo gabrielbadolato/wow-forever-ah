@@ -14,6 +14,8 @@ PRODUTO = "wowf"  # WoW: Forever
 DIAS_ENTRE_ATUALIZACOES = 7
 TIPO_ATRIBUTO, TIPO_SUFIXO = 2, 5
 NIVEL_MAXIMO = 120
+# Abaixo disto a recarga não limita quanto se fabrica num dia.
+RECARGA_MINIMA_HORAS = 0.1
 QUALIDADES = {"UNCOMMON": "GoodF", "RARE": "SuperiorF", "EPIC": "EpicF"}
 
 
@@ -53,6 +55,18 @@ def montar(bonus, descricoes, pontos):
     return {"bonus": listas, "pontos": orcamento}
 
 
+def recargas(habilidades, tempos):
+    """Horas de recarga das receitas que têm uma: {receita_id: horas}.
+
+    O id de receita da API da Blizzard é o da linha de SkillLineAbility; a recarga
+    fica no feitiço (SpellCooldowns), própria ou da categoria (as transmutações).
+    """
+    por_feitico = {int(t["SpellID"]): max(int(t["RecoveryTime"]), int(t["CategoryRecoveryTime"]))
+                   for t in tempos}
+    horas = {int(h["ID"]): round(por_feitico.get(int(h["Spell"]), 0) / 3600000, 1) for h in habilidades}
+    return {receita: h for receita, h in horas.items() if h >= RECARGA_MINIMA_HORAS}
+
+
 def caminho(cfg):
     return cfg.banco.parent / "bonus.json"
 
@@ -66,6 +80,7 @@ def baixar(cfg, forcar=False):
     try:
         versao = _get("/api/builds").json()[PRODUTO][0]["version"]
         dados = montar(*(_tabela(t, versao) for t in ("ItemBonus", "ItemNameDescription", "RandPropPoints")))
+        dados["recargas"] = recargas(_tabela("SkillLineAbility", versao), _tabela("SpellCooldowns", versao))
     except (requests.RequestException, KeyError, IndexError, ValueError) as e:
         print(f"bônus: não foi possível atualizar ({e})")
         return

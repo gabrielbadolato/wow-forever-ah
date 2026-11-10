@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import unittest
 from pathlib import Path
 
-from ahforever import banco, bonus, catalogo, coletor, compactar, exportar, receitas, vendas
+from ahforever import banco, bonus, catalogo, coletor, compactar, exportar, receitas, vendas, wowhead
 from ahforever.api import Resposta
 from ahforever.config import Config
 from ahforever.resumo import chave_variante, resumir
@@ -239,6 +239,30 @@ class TesteColetor(unittest.TestCase):
         self.assertEqual(dados["pontos"], {36: {"UNCOMMON": [14.0, 11.0, 8.0, 6.0, 4.0],
                                                 "RARE": [20.0, 17.0, 14.0, 12.0, 10.0],
                                                 "EPIC": [26.0, 23.0, 20.0, 18.0, 16.0]}})
+
+    def test_recarga_vem_do_feitico_ou_da_categoria(self):
+        habilidades = [{"ID": "10487", "Spell": "18560"}, {"ID": "9840", "Spell": "17187"},
+                       {"ID": "3324", "Spell": "2657"}, {"ID": "1", "Spell": "5"}]
+        tempos = [{"SpellID": "18560", "RecoveryTime": "342000000", "CategoryRecoveryTime": "0"},
+                  {"SpellID": "17187", "RecoveryTime": "0", "CategoryRecoveryTime": "169200000"},
+                  {"SpellID": "5", "RecoveryTime": "3000", "CategoryRecoveryTime": "0"}]
+        self.assertEqual(bonus.recargas(habilidades, tempos), {10487: 95.0, 9840: 47.0})
+
+    def test_tooltip_do_wowhead_vira_linhas(self):
+        tooltip = ('<table><tr><td><!--nstart--><b class="q3">Sandals</b><!--nend--><span class="q"><br>Item Level '
+                   '<!--ilvl-->33</span><br>Binds when equipped<table width="100%"><tr><td>Feet</td><th>'
+                   '<span class="q1">Cloth</span></th></tr></table><span>34 Armor</span><br><span>+7 Stamina</span>'
+                   '</td></tr></table><table><tr><td>Requires Level <!--rlvl-->28<br><span class="q">'
+                   '<a href="/x">Vestments</a> (0/5)</span><div class="q0 indent"><span>Mantle</span></div>'
+                   '<span class="q0"><span>(2) Set : <a href="/y">+5 Arcane Resistance.</a></span></span>'
+                   '<div class="whtt-sellprice">Sell Price: <span class="moneysilver">21</span> '
+                   '<span class="moneycopper">86</span></div><div class="whtt-extra">Dropped by: X</div>'
+                   '<br /><span class="q2">Outro item</span></td></tr></table>')
+        self.assertEqual(wowhead.linhas(tooltip), [
+            ["Item Level 33", "a"], ["Binds when equipped", ""], ["Feet", "", "Cloth"], ["34 Armor", ""],
+            ["+7 Stamina", ""], ["Requires Level 28", ""], ["Vestments (0/5)", "a"], ["Mantle", "c"],
+            ["(2) Set : +5 Arcane Resistance.", "c"], ["Sell Price: 21s 86c", "c"]])
+        self.assertEqual(wowhead._preco_de_venda(tooltip), 2186)
 
     def test_vendas_de_itens_ignoram_expirados_e_cancelamentos_caros(self):
         def anuncio(id, preco, tempo="LONG"):
