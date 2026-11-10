@@ -4,6 +4,9 @@ regiao = "us"
 idioma = "en_US"
 
 # Rulesets: 1 = PvP, 2 = Normal, 3 = Roleplay, 15 = Roleplay PvP.
+# Qualquer um devolve as 15 casas de todos os rulesets; cada ruleset tem três delas
+# (Aliança, Horda, neutra). Pela ordem: 110/113/116 PvP, 111/114/117 Normal,
+# 112/115/118 sem uso, 119/120/121 Roleplay, 123/124/125 Roleplay PvP (ver exportar.py).
 # Em 10/11/2026 os quatro devolviam exatamente os mesmos anúncios (as casas são
 # compartilhadas), então coletar um só já cobre todos.
 rulesets = [2]

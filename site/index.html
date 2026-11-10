@@ -668,7 +668,7 @@ async function desenharComparacao(id) {
   const linhas = casas.map(({casa, itens, vendas}) => {
     const g = itens.get(id);
     const vdia = g && vendas.horas >= HORAS_PARA_MOSTRAR ? (vendas.itens[id] || 0) / vendas.horas * 24 : null;
-    return `<tr class="${casa === casaAtual ? "aqui" : ""}"><td>Mercado ${casa.grupo} · ${rotulo(casa)}</td>
+    return `<tr class="${casa === casaAtual ? "aqui" : ""}"><td>${esc(nomeDoMercado(casa))} · ${rotulo(casa)}</td>
       <td class="num">${g ? moeda(g.min) : "–"}</td><td class="num sd">${g ? moeda(g.mercado) : "–"}</td>
       <td class="num">${g ? g.qtd.toLocaleString("pt-BR") : "–"}</td><td class="num sd">${porDia(vdia)}</td></tr>`;
   }).join("");
@@ -800,6 +800,8 @@ function esconderDica() { dicaDe = null; $("dica").hidden = true; }
 // A casa fica com 5% da venda; a neutra (Blackwater), com 15%.
 const taxa = casa => casa?.nome.startsWith("Blackwater") ? 0.15 : 0.05;
 const corteDaCasa = () => taxa(casaAtual);
+// Cada grupo de três casas é a economia de um ruleset; o nome vem da exportação (ver MERCADOS em exportar.py).
+const nomeDoMercado = casa => casa.mercado || `Mercado ${casa.grupo}`;
 const rotulo = casa => `${faccao(casa.nome)} · ${casa.id}`;
 const faccao = nome => nome.startsWith("Horde") ? "Horda" : nome.startsWith("Alliance") ? "Aliança" : "Neutra";
 let receitas, todasReceitas = [], linhasProf = [];
@@ -1184,9 +1186,9 @@ async function abrirArbitragem() {
   $("aviso-arb").hidden = false; $("aviso-arb").textContent = "Carregando…";
   const aqui = await calcularArbitragem();
   if (estado.modo !== "arbitragem" || !aqui) return;
-  $("nota-arb").textContent = `Compra em ${rotulo(aqui.casa)} para revender nas outras casas do Mercado ${aqui.casa.grupo}, e o caminho inverso. ` +
+  $("nota-arb").textContent = `Compra em ${rotulo(aqui.casa)} para revender nas outras casas do mesmo ruleset (${nomeDoMercado(aqui.casa)}), e o caminho inverso. ` +
     "Compra pelo preço de mercado da origem; venda pelo menor anúncio do destino ou, se for menor, pelo preço médio a que o item tem vendido lá, menos a taxa de lá (5%; 15% na neutra). " +
-    "Só itens sem variantes. Quais casas formam um mercado é dedução, não dado da Blizzard: confira um preço no jogo antes de confiar.";
+    "Só itens sem variantes. Cada ruleset tem três casas (Aliança, Horda, neutra); qual grupo de casas é qual ruleset é inferência: confira um preço no jogo.";
   filtrarArb();
 }
 
@@ -1597,7 +1599,7 @@ async function iniciar() {
     for (const [id, nome] of Object.entries(nomes)) { const i = catalogo.itens[id]; if (i) { i[10] = i[0]; i[0] = nome; } }
   }
   const mercados = [...new Set(meta.casas.map(c => c.grupo))].sort((a, b) => a - b);
-  $("casa").innerHTML = mercados.map(n => `<optgroup label="Mercado ${n}">` + meta.casas.map((c, i) => c.grupo !== n ? "" :
+  $("casa").innerHTML = mercados.map(n => `<optgroup label="${esc(nomeDoMercado(meta.casas.find(c => c.grupo === n)))}">` + meta.casas.map((c, i) => c.grupo !== n ? "" :
     `<option value="${i}">${rotulo(c)}${c.id === meta.casa_padrao ? " (padrão)" : ""}</option>`).join("") + "</optgroup>").join("");
   // Um link direto (#item=…&casa=…) manda; sem ele, volta-se à casa e à aba da última visita.
   const pedido = new URLSearchParams(location.hash.slice(1)), itemPedido = +pedido.get("item") || null;

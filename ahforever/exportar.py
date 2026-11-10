@@ -29,6 +29,16 @@ def _catalogo(con):
     return {"classes": classes, "itens": itens}
 
 
+# Cada ruleset do jogo (PvP, Normal, Roleplay, Roleplay PvP) tem a sua economia: três casas
+# (Aliança, Horda, neutra), e a API devolve as 15 seja qual for o ruleset pedido.
+# Confirmado em 10/11/2026: na Coreia e em Taiwan, que só têm PvP e Normal, só os grupos 1 e 2
+# têm anúncios; nos EUA e na Europa, com quatro rulesets, têm os grupos 1, 2, 4 e 5. O grupo 3
+# (112/115/118) está vazio em todas as regiões; os textos do jogo citam um ruleset Hardcore.
+# Qual grupo é qual ruleset é inferência: segue a ordem dos ids dos rulesets, na Coreia e em
+# Taiwan o grupo 1 é várias vezes maior (lá o PvP sempre dominou) e a Horda é maioria nos
+# grupos 1 e 5 e a Aliança nos grupos 2 e 4, como é costume em PvP e em PvE.
+MERCADOS = {1: "PvP", 2: "Normal", 3: "Sem uso", 4: "Roleplay", 5: "Roleplay PvP"}
+
 # Os tooltips vão em vários arquivos, para a página baixar só o pedaço do item apontado.
 PARTES_TOOLTIPS = 16
 
@@ -297,8 +307,8 @@ def exportar(cfg):
     casas, vistas, zip_do_addon = [], {}, None
     for ruleset_id, casa_id, nome in con.execute(
             "SELECT ruleset_id, casa_id, nome FROM casas ORDER BY 1, 2").fetchall():
-        # A API não diz quais casas formam um mesmo mercado; a n-ésima de cada facção
-        # (Aliança, Horda, neutra) parece ser do mesmo, pelo tamanho. Conta as vazias também.
+        # A n-ésima casa de cada facção (Aliança, Horda, neutra) pertence ao mesmo ruleset;
+        # ver MERCADOS. Conta as vazias também.
         grupo = vistas[ruleset_id, nome] = vistas.get((ruleset_id, nome), 0) + 1
         coletado_em, linhas, degraus = _casa(con, ruleset_id, casa_id)
         if not linhas:
@@ -312,6 +322,7 @@ def exportar(cfg):
         horas, meses = _historico(con, destino, ruleset_id, casa_id, agora.strftime("%Y-%m-%d"))
         _gravar(destino / f"degraus-{ruleset_id}-{casa_id}.json", degraus)
         casas.append({"ruleset": ruleset_id, "id": casa_id, "nome": nome, "grupo": grupo,
+                      "mercado": MERCADOS.get(grupo),
                       "coletado_em": coletado_em, "itens": len(linhas), "arquivo": arquivo,
                       "degraus": f"degraus-{ruleset_id}-{casa_id}.json",
                       "horas": horas, "meses": meses})
