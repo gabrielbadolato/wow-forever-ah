@@ -381,7 +381,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", 
 let meta, catalogo, bonusJogo, grupos = [], filtrados = [];
 let casaAtual, vendasCasa = {horas: 0, itens: {}};
 // Horas de observação para mostrar vendas por dia e para ranquear por elas.
-const HORAS_PARA_MOSTRAR = 2, HORAS_PARA_RANQUEAR = 6, HORAS_DE_ATRASO = 2;
+const HORAS_PARA_MOSTRAR = 2, HORAS_PARA_RANQUEAR = 6, HORAS_DE_ATRASO = 2, HORAS_DE_PANE = 4;
 const porDia = v => v == null ? "–" : v >= 10 ? Math.round(v).toLocaleString("pt-BR") : v.toLocaleString("pt-BR", {maximumFractionDigits: 1});
 const estado = {classe: null, sub: null, slot: null, ordem: "nome", sentido: 1, pagina: 0, abertos: new Set(), periodo: "7d", modo: "leiloes"};
 
@@ -968,7 +968,9 @@ async function carregarCasa() {
   if (temVendas && prof.ordem === "lucro" && !prof.ordemEscolhida) prof.ordem = "lucroDia";
   const atraso = (Date.now() - new Date(dados.coletado_em)) / 3600e3;
   $("velho").hidden = atraso < HORAS_DE_ATRASO;
-  $("velho").textContent = `Os preços estão com ${Math.floor(atraso)} h de atraso: a coleta pode ter parado.`;
+  // A página não sabe se a coleta rodou: atraso curto costuma ser a Blizzard, longo é defeito nosso.
+  $("velho").textContent = `Os preços estão com ${Math.floor(atraso)} h de atraso: ` +
+    (atraso < HORAS_DE_PANE ? "a Blizzard ainda não publicou preços novos." : "a coleta pode ter parado.");
   $("atualizado").textContent = `Dados coletados ${haQuanto(dados.coletado_em)} · ${new Date(dados.coletado_em).toLocaleString("pt-BR")}`;
   porItem.clear();
   for (const g of grupos) porItem.set(g.id, g);
