@@ -65,6 +65,29 @@ CREATE TABLE IF NOT EXISTS vendas (
 ) WITHOUT ROWID;
 CREATE INDEX IF NOT EXISTS vendas_item ON vendas (item_id, coleta_id);
 
+-- Resumo por dia (UTC) de cada item, somando as variantes (ver compactar.py).
+-- minimo/media são do menor preço de cada foto; quantidade é a média das fotos.
+CREATE TABLE IF NOT EXISTS diario (
+    ruleset_id    INTEGER NOT NULL,
+    casa_id       INTEGER NOT NULL,
+    dia           TEXT NOT NULL,
+    item_id       INTEGER NOT NULL,
+    minimo        INTEGER,
+    media         INTEGER,
+    quantidade    INTEGER,
+    vendido       INTEGER,
+    valor_vendido INTEGER,
+    PRIMARY KEY (ruleset_id, casa_id, dia, item_id)
+) WITHOUT ROWID;
+
+-- Dias que já têm resumo em diario (uma casa vazia fecha o dia sem nenhuma linha lá).
+CREATE TABLE IF NOT EXISTS dias_fechados (
+    ruleset_id INTEGER NOT NULL,
+    casa_id    INTEGER NOT NULL,
+    dia        TEXT NOT NULL,
+    PRIMARY KEY (ruleset_id, casa_id, dia)
+) WITHOUT ROWID;
+
 -- Receitas de profissão. reagentes é JSON: [[item_id, quantidade], ...].
 CREATE TABLE IF NOT EXISTS receitas (
     receita_id    INTEGER PRIMARY KEY,
@@ -92,6 +115,9 @@ def abrir(caminho):
     # Segundos cobertos pela estimativa de vendas desta foto; NULL = não estimada.
     if "intervalo_vendas" not in [c[1] for c in con.execute("PRAGMA table_info(coletas)")]:
         con.execute("ALTER TABLE coletas ADD COLUMN intervalo_vendas INTEGER")
+    # 1 = precos e vendas desta foto já foram apagados; só o resumo diário ficou.
+    if "compactada" not in [c[1] for c in con.execute("PRAGMA table_info(coletas)")]:
+        con.execute("ALTER TABLE coletas ADD COLUMN compactada INTEGER NOT NULL DEFAULT 0")
     return con
 
 

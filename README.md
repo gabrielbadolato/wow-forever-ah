@@ -43,6 +43,15 @@ A Blizzard publica uma foto nova por hora, mas às vezes atrasa. O timer roda
 
 `preco_mercado` é a média das 15% unidades mais baratas de cada item.
 
+O detalhe por foto (`precos`, `vendas`) só é guardado por 7 dias. A cada
+exportação, `ahforever/compactar.py` resume os dias encerrados na tabela
+`diario` (mínimo, média e vendas por item) e esvazia as fotos mais antigas,
+menos a última de cada casa. Com isso o banco para de crescer depois da
+primeira semana.
+
+Itens que a API da Blizzard não tem (boa parte dos novos do Forever) são
+cadastrados pelo tooltip do Wowhead (`ahforever/wowhead.py`, `fonte = 'wowhead'`).
+
 ## Vendas estimadas
 
 A API mostra anúncios, não vendas. A cada coleta, `ahforever/vendas.py` compara

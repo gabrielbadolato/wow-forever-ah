@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import unittest
 from pathlib import Path
 
-from ahforever import banco, bonus, catalogo, coletor, exportar, receitas, vendas
+from ahforever import banco, bonus, catalogo, coletor, compactar, exportar, receitas, vendas
 from ahforever.api import Resposta
 from ahforever.config import Config
 from ahforever.resumo import chave_variante, resumir
@@ -147,8 +147,10 @@ class TesteColetor(unittest.TestCase):
             # Duas variantes do mesmo item viram um ponto só: menor preço, quantidades somadas.
             con.execute("INSERT INTO precos VALUES (?, 720, '', ?, ?, ?, 1)", (i, preco, preco, quantidade))
             con.execute("INSERT INTO precos VALUES (?, 720, 'b1', ?, ?, 1, 1)", (i, preco + 50, preco + 50))
+        con.execute("INSERT INTO vendas VALUES (2, 720, '', 3, 300)")
         con.commit()
         destino = self.cfg.pasta_brutos.parent / "site"
+        self.assertEqual(compactar.compactar(con, "2026-11-09"), (1, 0))
         horas, meses = exportar._historico(con, destino, 2, 113, "2026-11-09")
         self.assertEqual((horas, meses), (["2026-11-08", "2026-11-09"], ["2026-11"]))
         pasta = destino / "hist" / "2-113"
@@ -157,6 +159,16 @@ class TesteColetor(unittest.TestCase):
         self.assertEqual(dia["itens"]["720"], [[100, 80], [6, 8]])
         mes = json.loads((pasta / "d-2026-11.json").read_text())
         self.assertEqual(mes, {"dias": ["2026-11-08"], "itens": {"720": [[80], [90], [7]]}})
+
+        # Semanas depois, o detalhe por foto some; ficam o resumo diário e a foto mais recente.
+        self.assertEqual(compactar.compactar(con, "2026-11-30"), (1, 2))
+        self.assertEqual(con.execute("SELECT DISTINCT coleta_id FROM precos").fetchall(), [(3,)])
+        self.assertEqual(con.execute("SELECT count(*) FROM vendas").fetchone(), (0,))
+        self.assertEqual(
+            con.execute("SELECT dia, minimo, media, quantidade, vendido, valor_vendido FROM diario "
+                        "ORDER BY 1").fetchall(),
+            [("2026-11-08", 80, 90, 7, 3, 300), ("2026-11-09", 90, 90, 5, None, None)])
+        self.assertEqual(compactar.compactar(con, "2026-11-30"), (0, 0))
 
     def test_linhas_do_tooltip_seguem_a_ordem_do_jogo(self):
         previa = {

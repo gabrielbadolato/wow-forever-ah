@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 
-from . import banco, bonus, catalogo, config, exportar, publicar, receitas, vendas
+from . import banco, bonus, catalogo, config, exportar, publicar, receitas, vendas, wowhead
 from .api import ClienteBlizzard, ErroAPI
 from .resumo import resumir
 
@@ -154,7 +154,7 @@ def main():
     bonus.baixar(cfg, forcar=args.comando == "bonus")
     try:
         receitas.baixar(cfg, api, forcar=args.comando == "receitas")
-        catalogo.catalogar(cfg, api)
+        catalogo.catalogar(cfg, api, reserva=wowhead.Reserva)
     except ErroAPI as e:
         if args.comando != "coletar":
             raise SystemExit(f"catálogo: {e}")

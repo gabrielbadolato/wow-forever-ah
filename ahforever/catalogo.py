@@ -29,8 +29,11 @@ def _sem_links(valor):
     return valor
 
 
-def buscar_item(api, item_id):
-    """Procura o item em cada fonte, na ordem. Devolve um dict com fonte=None se não achar."""
+def buscar_item(api, item_id, reserva=None):
+    """Procura o item em cada fonte, na ordem, e por último na reserva (ver wowhead.py).
+
+    Devolve um dict com fonte=None se não achar.
+    """
     for modelo in FONTES:
         namespace = modelo.format(r=api.regiao)
         r = api.get(f"/data/wow/item/{item_id}", namespace=namespace)
@@ -54,7 +57,7 @@ def buscar_item(api, item_id):
             "fonte": namespace,
             "bruto": json.dumps(_sem_links(d), ensure_ascii=False, separators=(",", ":")),
         }
-    return {"item_id": item_id, "fonte": None}
+    return (reserva and reserva(item_id)) or {"item_id": item_id, "fonte": None}
 
 
 COLUNAS = ("item_id", "nome", "qualidade", "nivel", "nivel_requerido", "classe_id", "classe",
@@ -76,14 +79,15 @@ def pendentes(con, agora):
     )]
 
 
-def catalogar(cfg, api, limite=None):
+def catalogar(cfg, api, limite=None, reserva=None):
     con = banco.abrir(cfg.banco)
+    reserva = reserva and reserva(con).buscar
     agora = datetime.now(timezone.utc)
     ids = pendentes(con, agora)[:limite]
     carimbo = agora.strftime("%Y-%m-%dT%H:%M:%SZ")
     achados = 0
     with ThreadPoolExecutor(PARALELOS) as pool:
-        for n, item in enumerate(pool.map(lambda i: buscar_item(api, i), ids), 1):
+        for n, item in enumerate(pool.map(lambda i: buscar_item(api, i, reserva), ids), 1):
             item["consultado_em"] = carimbo
             achados += item["fonte"] is not None
             con.execute(

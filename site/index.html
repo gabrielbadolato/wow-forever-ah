@@ -161,6 +161,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
 .reagentes td { padding: 2px 16px 2px 0; background: none !important; box-shadow: none !important; font-size: 13px; color: var(--texto); }
 .reagentes td.nome img, .reagentes .semicone { width: 20px; height: 20px; }
 .reagentes .fonte { color: var(--fraco); font-family: Arial, sans-serif; }
+.reagentes .sub td { color: var(--fraco); font-size: 12px; padding: 0 6px 6px 40px; }
 
 /* ---- Textos de apoio e rodapé ---- */
 .titulo-bloco { flex: none; margin: 0; padding: 7px 12px; font: 14px var(--titulo); color: var(--ouro); text-shadow: 0 1px 0 #000;
@@ -316,6 +317,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
       <button class="acao mais-filtros" type="button" aria-expanded="false">Filtros</button>
       <label class="avancado">Lucro mínimo (ouro) <input id="p-lucro" type="number" step="any" style="width:86px"></label>
       <label class="avancado">Mín. à venda <input id="p-qtd" type="number" min="0" value="1"></label>
+      <label class="caixa avancado" title="Usa o custo de fabricar o material (barras, tecidos, peças) quando sai mais barato que comprar">Materiais intermediários <span class="par"><input id="p-cadeia" type="checkbox" checked> fabricar se compensar</span></label>
       <label class="caixa avancado">Sem preço completo <span class="par"><input id="p-incompletas" type="checkbox"> mostrar</span></label>
     </form>
     <div id="bloco-mat" hidden>
@@ -625,19 +627,52 @@ function infoItem(id) {
 }
 function iconeHtml(i) {
   return i.icone
-    ? `<img loading="lazy" alt="" src="https://render.worldofwarcraft.com/${esc(i.fonte)}/icons/56/${esc(i.icone)}.jpg">`
+    ? `<img loading="lazy" alt="" src="${urlDoIcone(i)}">`
     : `<span class="semicone"></span>`;
+}
+// Os ícones novos do Forever não estão no servidor de imagens da Blizzard; os do Wowhead estão.
+function urlDoIcone(i) {
+  return i.fonte === "wowhead"
+    ? `https://wow.zamimg.com/images/wow/icons/medium/${esc(i.icone)}.jpg`
+    : `https://render.worldofwarcraft.com/${esc(i.fonte)}/icons/56/${esc(i.icone)}.jpg`;
 }
 const moedaOuTraco = v => v == null ? "–" : (v < 0 ? "−" : "") + moeda(Math.abs(v));
 
-// Materiais pelo preço de mercado do leilão, ou pelo NPC quando ele vende mais barato.
+// Receitas com tempo de recarga: o material sai barato, mas não dá para fabricar à vontade.
+const COM_RECARGA = /^(Transmute|Mooncloth$|Refined Deeprock Salt$)/;
+let receitasDoItem = new Map(), custos = new Map();
+const emCalculo = new Set();
+
+// Menor custo de uma unidade do material: leilão (preço de mercado), NPC ou, se sair
+// mais barato, fabricar com a receita de qualquer profissão, descendo pela cadeia.
 function precoReagente(id) {
+  if (custos.has(id)) return custos.get(id);
   const g = porItem.get(id), leilao = g ? (g.mercado ?? g.min) : null, npc = receitas.npc[id];
-  if (npc != null && (leilao == null || npc <= leilao)) return {preco: npc, fonte: "NPC"};
-  return {preco: leilao, fonte: leilao == null ? "sem anúncio" : "leilão"};
+  let melhor = npc != null && (leilao == null || npc <= leilao) ? {preco: npc, fonte: "NPC"}
+    : {preco: leilao, fonte: leilao == null ? "sem anúncio" : "leilão"};
+  // Uma receita que volta ao próprio item (minério ↔ barra) não conta como forma de fabricá-lo.
+  if (!$("p-cadeia").checked || emCalculo.has(id)) return melhor;
+  emCalculo.add(id);
+  for (const [, profId, , nome, , feitos, reagentes] of receitasDoItem.get(id) || []) {
+    if (COM_RECARGA.test(nome)) continue;
+    let custo = 0;
+    for (const [rid, q] of reagentes) {
+      const p = precoReagente(rid).preco;
+      custo = p == null || custo == null ? null : custo + p * q;
+    }
+    if (custo == null) continue;
+    custo = Math.round(custo / feitos);
+    if (melhor.preco == null || custo < melhor.preco)
+      melhor = {preco: custo, fonte: `fabricar (${receitas.profissoes[profId]})`, partes: reagentes, feitos};
+  }
+  emCalculo.delete(id);
+  custos.set(id, melhor);
+  return melhor;
 }
 
 function calcularReceitas() {
+  custos = new Map(); receitasDoItem = new Map();
+  for (const r of receitas.receitas) receitasDoItem.set(r[4], [...(receitasDoItem.get(r[4]) || []), r]);
   todasReceitas = receitas.receitas.map(([rid, profId, categoria, nome, item, feitos, reagentes]) => {
     const g = porItem.get(item), venda = g ? g.min : null;
     let custo = 0, completo = true;
@@ -709,6 +744,13 @@ function filtrarProf() {
   desenharProf();
 }
 
+// Do que é feito um material que compensa fabricar: uma linha discreta abaixo dele.
+function subMateriais(p) {
+  if (!p.partes) return "";
+  const lista = p.partes.map(([id, q]) => `${q * p.q / p.feitos}`.replace(".", ",") + " × " + esc(infoItem(id).nome)).join(", ");
+  return `<tr class="sub"><td colspan="5">↳ ${lista}</td></tr>`;
+}
+
 function desenharProf() {
   let h = "";
   for (const l of linhasProf) {
@@ -729,7 +771,7 @@ function desenharProf() {
       const r = infoItem(p.id);
       return `<tr data-id="${p.id}"><td class="nome">${iconeHtml(r)}<span class="q-${r.qualidade}">${esc(r.nome)}</span></td>
         <td class="num">× ${p.q}</td><td class="num sd">${moedaOuTraco(p.preco)}</td>
-        <td class="num">${moedaOuTraco(p.preco == null ? null : p.preco * p.q)}</td><td class="fonte">${p.fonte}</td></tr>`;
+        <td class="num">${moedaOuTraco(p.preco == null ? null : p.preco * p.q)}</td><td class="fonte">${p.fonte}</td></tr>${subMateriais(p)}`;
     }).join("");
     h += `<tr class="detalhe"><td colspan="9"><div class="sm" style="margin-bottom:6px">Materiais ${moedaOuTraco(l.custo)} · venda líquida ${moedaOuTraco(l.bruto)}${l.lucroDia != null ? ` · lucro/dia ${moedaOuTraco(l.lucroDia)}` : ""}</div>
       <table class="reagentes">${materiais}</table>${semHover ? `<div class="atributos" data-id="${l.item}"></div>` : ""}${histHtml(l.item)}</td></tr>`;
@@ -920,9 +962,7 @@ function desenhar() {
   let h = "";
   for (const g of pagina) {
     const varias = g.variantes.length > 1, aberto = estado.abertos.has(g.id);
-    const icone = g.icone
-      ? `<img loading="lazy" alt="" src="https://render.worldofwarcraft.com/${esc(g.fonte)}/icons/56/${esc(g.icone)}.jpg">`
-      : `<span class="semicone"></span>`;
+    const icone = iconeHtml(g);
     h += `<tr class="item abre" data-id="${g.id}" aria-expanded="${aberto}">
       <td class="num">${moeda(g.min)}</td>
       <td class="nome">${icone}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
@@ -1032,6 +1072,7 @@ $("linhas").onclick = e => {
   desenhar();
 };
 let esperaProf;
+$("p-cadeia").onchange = () => { calcularReceitas(); montarProfissoes(); filtrarProf(); };
 $("filtros-prof").oninput = () => { clearTimeout(esperaProf); esperaProf = setTimeout(filtrarProf, 120); };
 $("cab-prof").onclick = e => {
   const th = e.target.closest("th[data-ordem]");

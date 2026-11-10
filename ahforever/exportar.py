@@ -2,10 +2,8 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 
-from . import banco, bonus
-
-# Dias recentes publicados ponto a ponto; antes disso só o resumo diário.
-DIAS_POR_HORA = 7
+from . import banco, bonus, compactar
+from .compactar import DIAS_POR_HORA, SERIE
 
 
 def _gravar(caminho, dados):
@@ -105,8 +103,12 @@ def linhas_do_tooltip(previa):
 
 
 def _tooltips(con):
-    return {item_id: linhas_do_tooltip(json.loads(bruto).get("preview_item") or {})
-            for item_id, bruto in con.execute("SELECT item_id, bruto FROM itens WHERE bruto IS NOT NULL")}
+    tooltips = {}
+    for item_id, bruto in con.execute("SELECT item_id, bruto FROM itens WHERE bruto IS NOT NULL"):
+        item = json.loads(bruto)
+        # Itens vindos do Wowhead já chegam com as linhas prontas.
+        tooltips[item_id] = item.get("linhas") or linhas_do_tooltip(item.get("preview_item") or {})
+    return tooltips
 
 
 # Reagentes vendidos por NPC a preço fixo (lista do Classic; o Forever pode ter mudado alguma coisa).
@@ -151,15 +153,6 @@ def _vendas(con, ruleset_id, casa_id, agora):
     return {"horas": round(segundos / 3600, 1), "itens": itens}
 
 
-# Uma linha por (foto, item), somando as variantes: menor preço e quantidade total.
-SERIE = (
-    "SELECT c.coletado_em AS quando, p.item_id AS item_id, MIN(p.preco_min) AS minimo, "
-    "SUM(p.quantidade) AS quantidade FROM coletas c JOIN precos p ON p.coleta_id = c.id "
-    "WHERE c.ruleset_id = ? AND c.casa_id = ? AND c.coletado_em >= ? AND c.coletado_em < ? "
-    "GROUP BY c.coletado_em, p.item_id"
-)
-
-
 def _dia_por_hora(con, ruleset_id, casa_id, dia):
     """Pontos de um dia (UTC): {"t": [fotos], "itens": {id: [[mínimos], [quantidades]]}}."""
     seguinte = (datetime.fromisoformat(dia) + timedelta(days=1)).strftime("%Y-%m-%d")
@@ -177,12 +170,11 @@ def _dia_por_hora(con, ruleset_id, casa_id, dia):
 def _mes_por_dia(con, ruleset_id, casa_id, dias):
     """Resumo diário: {"dias": [...], "itens": {id: [[mínimo], [média dos mínimos], [quantidade média]]}}."""
     posicao = {d: i for i, d in enumerate(dias)}
-    seguinte = (datetime.fromisoformat(dias[-1]) + timedelta(days=1)).strftime("%Y-%m-%d")
     itens = {}
     for dia, item_id, minimo, media, quantidade in con.execute(
-            "SELECT substr(quando, 1, 10) AS dia, item_id, MIN(minimo), "
-            f"CAST(AVG(minimo) AS INTEGER), CAST(AVG(quantidade) AS INTEGER) FROM ({SERIE}) "
-            "GROUP BY dia, item_id", (ruleset_id, casa_id, dias[0], seguinte)):
+            "SELECT dia, item_id, minimo, media, quantidade FROM diario WHERE ruleset_id = ? "
+            "AND casa_id = ? AND dia >= ? AND dia <= ? AND minimo IS NOT NULL",
+            (ruleset_id, casa_id, dias[0], dias[-1])):
         if dia not in posicao:
             continue
         serie = itens.setdefault(item_id, [[None] * len(dias) for _ in range(3)])
@@ -201,7 +193,9 @@ def _historico(con, destino, ruleset_id, casa_id, hoje):
     ontem = (datetime.fromisoformat(hoje) - timedelta(days=1)).strftime("%Y-%m-%d")
 
     # Hoje e ontem mudam (o dia fecha depois da última foto); os outros já estão prontos.
-    recentes = dias[-DIAS_POR_HORA:]
+    # O detalhe por foto dos dias mais antigos já foi apagado pela compactação.
+    limite = (datetime.fromisoformat(hoje) - timedelta(days=DIAS_POR_HORA)).strftime("%Y-%m-%d")
+    recentes = [d for d in dias[-DIAS_POR_HORA:] if d >= limite]
     for dia in recentes:
         arquivo = pasta / f"h-{dia}.json"
         if dia >= ontem or not arquivo.exists():
@@ -226,13 +220,17 @@ def exportar(cfg):
     destino = cfg.pasta_site / "dados"
     destino.mkdir(parents=True, exist_ok=True)
     con = banco.abrir(cfg.banco)
+    agora = datetime.now(timezone.utc)
+    # Antes de tudo: o histórico mensal sai do resumo diário que a compactação mantém.
+    resumidos, esvaziadas = compactar.compactar(con, agora.strftime("%Y-%m-%d"))
+    if resumidos or esvaziadas:
+        print(f"banco: {resumidos} dias resumidos, {esvaziadas} fotos antigas esvaziadas")
     _gravar(destino / "itens.json", _catalogo(con))
     _gravar(destino / "tooltips.json", _tooltips(con))
     _gravar(destino / "receitas.json", _receitas(con))
     if bonus.caminho(cfg).exists():
         _gravar(destino / "bonus.json", json.loads(bonus.caminho(cfg).read_text()))
 
-    agora = datetime.now(timezone.utc)
     casas = []
     for ruleset_id, casa_id, nome in con.execute(
             "SELECT ruleset_id, casa_id, nome FROM casas ORDER BY 1, 2").fetchall():
