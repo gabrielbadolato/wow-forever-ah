@@ -197,6 +197,19 @@ td.nome .fav { position: absolute; right: 4px; top: 50%; transform: translateY(-
 .comparar td, .comparar th { padding: 3px 10px; font-size: 13px; }
 .comparar tr.aqui td { color: var(--ouro); }
 #atualizado a { color: var(--ouro-fosco); }
+.erro { font: 11px Arial, sans-serif; color: var(--fraco); }
+.lema button { margin-left: 8px; padding: 0; border: 0; background: none; cursor: pointer; font: inherit; font-style: normal; color: var(--ouro-fosco); text-decoration: underline; }
+.lema button:hover { color: #fff; }
+#metodo { width: min(760px, calc(100vw - 16px)); max-height: calc(100vh - 32px); padding: 0; color: var(--texto); background: var(--janela);
+  border: 1px solid #000; border-radius: 6px; box-shadow: 0 0 0 1px #6b6b6b, 0 0 0 3px #242424, 0 20px 60px rgba(0, 0, 0, .9); }
+#metodo::backdrop { background: rgba(0, 0, 0, .7); }
+#metodo .corpo { padding: 4px 18px 14px; font-size: 13.5px; line-height: 1.5; }
+#metodo h3 { margin: 16px 0 4px; font: 14px var(--titulo); color: var(--ouro); }
+#metodo p, #metodo ul { margin: 4px 0; } #metodo ul { padding-left: 20px; } #metodo li { margin: 3px 0; }
+#metodo .topo { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; }
+#metodo .topo button { margin: 4px 8px; }
+#metodo table { min-width: 0; margin: 6px 0; } #metodo td, #metodo th { white-space: normal; padding: 4px 8px; font: 13px Arial, sans-serif; vertical-align: top; }
+html[lang=en] [data-l=pt], html:not([lang=en]) [data-l=en] { display: none; }
 #idioma { position: absolute; right: 10px; top: 5px; cursor: pointer; padding: 2px 8px; border: 1px solid #000; border-radius: 3px; font: 11px var(--titulo);
   color: var(--ouro-fosco); background: linear-gradient(#3b3b3b, #272727); box-shadow: inset 0 0 0 1px rgba(110, 110, 110, .3); }
 .acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; max-width: 800px; margin-top: 10px; font-size: 13px; color: var(--fraco); }
@@ -325,7 +338,7 @@ td.nome .fav { position: absolute; right: 4px; top: 50%; transform: translateY(-
     <h1>Goblinomics</h1>
     <button type="button" id="idioma" data-nt title="Switch to English / Mudar para português">EN</button>
   </div>
-  <p class="lema">Preços, lucro e oportunidades da casa de leilões do WoW: Forever, atualizados a cada hora.</p>
+  <p class="lema">Preços, lucro e oportunidades da casa de leilões do WoW: Forever, atualizados a cada hora.<button type="button" id="abrir-metodo">Como calculamos</button></p>
   <div class="barra-abas">
     <nav id="abas" aria-label="Seções">
       <button type="button" data-modo="leiloes" class="ativo">Leilões</button>
@@ -515,6 +528,110 @@ td.nome .fav { position: absolute; right: 4px; top: 50%; transform: translateY(-
 </main>
 <p class="sm fa">Site de fã, sem vínculo com a Blizzard Entertainment. World of Warcraft e o logo são marcas da Blizzard.</p>
 </div>
+<dialog id="metodo" data-nt aria-labelledby="titulo-metodo">
+  <div class="topo titulo-bloco"><span id="titulo-metodo"><span data-l="pt">Como os números são calculados</span><span data-l="en">How the numbers are calculated</span></span>
+    <button class="acao" type="button" id="fechar-metodo"><span data-l="pt">Fechar</span><span data-l="en">Close</span></button></div>
+  <div class="corpo" data-l="pt">
+    <h3>De onde vêm os dados</h3>
+    <p>Da API oficial da Blizzard. Ela publica, mais ou menos uma vez por hora, uma "foto" de todos os anúncios ativos de cada casa de leilões.
+      A foto traz item, quantidade, preço e uma faixa de tempo restante. Ela <strong>não</strong> traz vendas, compradores nem vendedores.
+      Tudo o que a página mostra além dos anúncios é calculado a partir dessas fotos.</p>
+    <h3>Preços</h3>
+    <ul>
+      <li><strong>Menor preço</strong>: o arremate mais barato por unidade na última foto. Anúncio só com lance não tem preço.</li>
+      <li><strong>Mercado</strong>: a média das 15% unidades mais baratas. Ignora um anúncio isolado muito barato ou muito caro.</li>
+      <li><strong>Média de 7 dias</strong>: a média do menor preço de cada foto dos últimos 7 dias. Só existe depois de 6 fotos.</li>
+      <li><strong>Coluna "7 dias"</strong>: quanto o menor preço de agora está acima ou abaixo dessa média.</li>
+    </ul>
+    <p>Os preços são exatos no momento da foto, mas a foto pode ter até uma hora (às vezes mais, quando a Blizzard atrasa).</p>
+    <h3>Vendas por dia</h3>
+    <p>É uma estimativa. A cada foto nova, comparamos com a anterior e olhamos o que sumiu. Um anúncio some por três motivos, e a API não diz qual:</p>
+    <ul>
+      <li><strong>Expirou</strong>: se na foto anterior ele estava na faixa de menos de 30 minutos, não conta como venda.</li>
+      <li><strong>Foi cancelado</strong>: em armas e armaduras, se estava bem acima do mercado, não conta. Em itens empilháveis, só contam as unidades
+        que sumiram a um preço igual ou menor que o mais barato que continua à venda.</li>
+      <li><strong>Foi vendido</strong>: é o que sobra depois dos dois filtros.</li>
+    </ul>
+    <p>Somamos as vendas dos últimos 7 dias, dividimos pelas horas observadas e multiplicamos por 24. Fotos separadas por mais de 2 h 30 não entram.</p>
+    <h3>Margem de erro</h3>
+    <p>O <strong>±</strong> ao lado das vendas por dia é a margem de 95%, calculada pela variação das vendas do item de uma foto para outra.
+      "30 ±6" quer dizer que, repetindo a observação, o número cairia entre 24 e 36 em 19 de cada 20 vezes. Sem ±, há menos de 3 fotos comparadas ou nenhuma venda.</p>
+    <p>Essa margem cobre só a oscilação estatística. Há desvios do próprio método que ela não mede:</p>
+    <table>
+      <tr><th>Situação</th><th>Efeito</th></tr>
+      <tr><td>Alguém cancela um anúncio barato para anunciar de novo</td><td>Conta como venda: o número fica <strong>maior</strong> que o real. Pesa mais em itens muito disputados.</td></tr>
+      <tr><td>Um anúncio é criado e vendido entre duas fotos</td><td>Nunca aparece: o número fica <strong>menor</strong> que o real. Pesa mais em itens que vendem em minutos.</td></tr>
+      <tr><td>Poucas horas de observação (casa nova, coleta parada)</td><td>A margem fica larga e o número muda muito de uma hora para outra.</td></tr>
+    </table>
+    <p>Por isso as vendas por dia servem bem para comparar itens entre si e mal como contagem exata. Tudo o que depende delas (lucro por dia,
+      "O que fazer agora", pechinchas) herda a mesma incerteza, na mesma proporção.</p>
+    <h3>Lucro das receitas</h3>
+    <ul>
+      <li><strong>Venda</strong>: pelo menor preço de agora, menos a taxa da casa (5%; 15% na casa neutra).</li>
+      <li><strong>Materiais</strong>: preço de mercado, preço de NPC quando for menor ou, se sair mais barato, o custo de fabricar o material.</li>
+      <li><strong>Vale fabricar até N</strong>: o material é comprado do anúncio mais barato ao mais caro; N é onde o lucro total para de crescer ou o material acaba.</li>
+      <li><strong>Lucro por dia</strong>: lucro de uma fabricação vezes o que o mercado vende por dia, limitado pela recarga da receita.</li>
+    </ul>
+    <p>Não entram na conta: o depósito do anúncio (perdido se o item não vender), o tempo de fabricação e a queda de preço que acontece quando você anuncia muito de uma vez.</p>
+    <h3>Ofertas, Entre casas e "O que fazer agora"</h3>
+    <ul>
+      <li><strong>Abaixo da média</strong>: menor preço de agora contra a média de 7 dias; a revenda supõe vender pela média, já sem a taxa.</li>
+      <li><strong>Abaixo do NPC</strong>: o preço de NPC vem do cadastro do item; confira no jogo antes de comprar muito.</li>
+      <li><strong>Entre casas</strong>: compra pelo mercado da origem e vende pelo menor anúncio do destino ou, se for menor, pelo preço médio a que o item vendeu lá.</li>
+      <li><strong>O que fazer agora</strong>: junta tudo e ordena pelo lucro total da quantidade indicada, limitada às vendas de um dia. É a estimativa mais incerta da página.</li>
+    </ul>
+  </div>
+  <div class="corpo" data-l="en">
+    <h3>Where the data comes from</h3>
+    <p>From Blizzard's official API. About once an hour it publishes a "snapshot" of every active listing in each auction house.
+      A snapshot has item, quantity, price and a time-left bracket. It does <strong>not</strong> have sales, buyers or sellers.
+      Everything this page shows beyond the listings is calculated from those snapshots.</p>
+    <h3>Prices</h3>
+    <ul>
+      <li><strong>Lowest price</strong>: the cheapest buyout per unit in the latest snapshot. Bid-only listings have no price.</li>
+      <li><strong>Market</strong>: the average of the cheapest 15% of units. It ignores a lone listing that is far too cheap or too expensive.</li>
+      <li><strong>7-day average</strong>: the average of the lowest price in each snapshot over the last 7 days. It needs at least 6 snapshots.</li>
+      <li><strong>"7 days" column</strong>: how far the current lowest price is above or below that average.</li>
+    </ul>
+    <p>Prices are exact at snapshot time, but the snapshot can be up to an hour old (sometimes more, when Blizzard is late).</p>
+    <h3>Sales per day</h3>
+    <p>This is an estimate. With each new snapshot we compare it with the previous one and look at what disappeared. A listing disappears for three reasons, and the API does not say which:</p>
+    <ul>
+      <li><strong>It expired</strong>: if it was in the under-30-minutes bracket in the previous snapshot, it is not counted as a sale.</li>
+      <li><strong>It was cancelled</strong>: for weapons and armor, if it was well above market, it is not counted. For stackable items, only units
+        that disappeared at a price equal to or below the cheapest one still listed are counted.</li>
+      <li><strong>It was sold</strong>: whatever is left after those two filters.</li>
+    </ul>
+    <p>We add up the sales of the last 7 days, divide by the hours observed and multiply by 24. Snapshots more than 2 h 30 apart are left out.</p>
+    <h3>Margin of error</h3>
+    <p>The <strong>±</strong> next to sales per day is the 95% margin, computed from how much the item's sales vary from one snapshot to the next.
+      "30 ±6" means that, repeating the observation, the number would fall between 24 and 36 in 19 out of 20 cases. No ± means fewer than 3 compared snapshots or no sales.</p>
+    <p>That margin only covers statistical noise. The method itself has biases it does not measure:</p>
+    <table>
+      <tr><th>Situation</th><th>Effect</th></tr>
+      <tr><td>Someone cancels a cheap listing to post it again</td><td>Counted as a sale: the number comes out <strong>higher</strong> than reality. Matters most for heavily contested items.</td></tr>
+      <tr><td>A listing is posted and sold between two snapshots</td><td>Never seen: the number comes out <strong>lower</strong> than reality. Matters most for items that sell within minutes.</td></tr>
+      <tr><td>Few hours observed (new house, collection stopped)</td><td>The margin gets wide and the number swings a lot from hour to hour.</td></tr>
+    </table>
+    <p>So sales per day are good for comparing items with each other and poor as an exact count. Everything that depends on them (profit per day,
+      "What to do now", bargains) inherits the same uncertainty, in the same proportion.</p>
+    <h3>Recipe profit</h3>
+    <ul>
+      <li><strong>Sale</strong>: at the current lowest price, minus the house cut (5%; 15% at the neutral house).</li>
+      <li><strong>Materials</strong>: market price, vendor price when lower or, if cheaper, the cost of crafting the material.</li>
+      <li><strong>Worth crafting up to N</strong>: materials are bought from the cheapest listing upwards; N is where total profit stops growing or materials run out.</li>
+      <li><strong>Profit per day</strong>: profit of one craft times what the market sells per day, capped by the recipe's cooldown.</li>
+    </ul>
+    <p>Not included: the listing deposit (lost if the item does not sell), crafting time, and the price drop that happens when you list a lot at once.</p>
+    <h3>Deals, Across houses and "What to do now"</h3>
+    <ul>
+      <li><strong>Below average</strong>: current lowest price against the 7-day average; resale assumes selling at the average, after the cut.</li>
+      <li><strong>Below vendor</strong>: vendor prices come from the item database; check in game before buying a lot.</li>
+      <li><strong>Across houses</strong>: buys at the origin's market price and sells at the destination's lowest listing or, if lower, at the average price the item sold for there.</li>
+      <li><strong>What to do now</strong>: combines everything and sorts by total profit for the quantity shown, capped at one day of sales. It is the most uncertain estimate on the page.</li>
+    </ul>
+  </div>
+</dialog>
 <div id="dica" hidden></div>
 <script>
 const POR_PAGINA = 50;
@@ -598,6 +715,7 @@ const TEXTOS_EN = {
   "Pelo menos uma venda estimada por dia nesta casa": "At least one estimated sale per day in this house",
   "Unidades à venda na casa de origem": "Units listed in the origin house", "Vendas estimadas por dia na casa de destino": "Estimated sales per day in the destination house",
   "Preço lá, menos a taxa de lá, menos o preço de compra": "Price there, minus the cut there, minus the purchase price",
+  "Como calculamos": "How we calculate", "Margem de erro de 95%; veja Como calculamos": "95% margin of error; see How we calculate",
   "Unidades à venda abaixo do preço de NPC": "Units listed below the vendor price",
   "NPC paga menos o que você gasta, somando todas as unidades": "What the vendor pays minus what you spend, over all units",
   "Média menos a taxa da casa, menos o preço de agora": "Average minus the house cut, minus the current price",
@@ -890,7 +1008,7 @@ async function desenharComparacao(id) {
     const vdia = g && vendas.horas >= HORAS_PARA_MOSTRAR ? (vendas.itens[id] || 0) / vendas.horas * 24 : null;
     return `<tr class="${casa === casaAtual ? "aqui" : ""}"><td>${esc(nomeDoMercado(casa))} · ${rotulo(casa)}</td>
       <td class="num">${g ? moeda(g.min) : "–"}</td><td class="num sd">${g ? moeda(g.mercado) : "–"}</td>
-      <td class="num">${g ? g.qtd.toLocaleString(LOC) : "–"}</td><td class="num sd">${porDia(vdia)}</td></tr>`;
+      <td class="num">${g ? g.qtd.toLocaleString(LOC) : "–"}</td><td class="num sd">${comMargem(vdia, g && margemVendas(vendas, id))}</td></tr>`;
   }).join("");
   caixa.innerHTML = `<div class="rotulo">Nas outras casas${porItem.get(id)?.variantes.length > 1 ? " (menor preço entre todas as variantes)" : ""}</div>
     <table><thead><tr><th>Casa</th><th class="num">Menor preço</th><th class="num sd">Mercado</th><th class="num">À venda</th><th class="num sd">Vendas/dia</th></tr></thead>
@@ -1060,6 +1178,17 @@ function urlDoIcone(i) {
     ? `https://wow.zamimg.com/images/wow/icons/medium/${esc(i.icone)}.jpg`
     : `https://render.worldofwarcraft.com/${esc(i.fonte)}/icons/56/${esc(i.icone)}.jpg`;
 }
+// Margem de erro das vendas por dia (95%), pela variação das vendas do item de uma foto para outra.
+// Cobre a oscilação estatística; os desvios do método (cancelamentos, vendas entre fotos) não entram.
+const FOTOS_PARA_MARGEM = 3;
+function margemVendas(vendas, id) {
+  const m = vendas.fotos, soma = vendas.itens[id] || 0;
+  if (!(m >= FOTOS_PARA_MARGEM) || !(vendas.horas >= HORAS_PARA_MOSTRAR) || !soma) return null;
+  const variancia = Math.max(0, ((vendas.quadrados?.[id] || 0) - soma * soma / m) / (m - 1));
+  return 1.96 * Math.sqrt(m * variancia) / vendas.horas * 24;
+}
+const textoMargem = e => e ? ` ±${porDia(e)}` : "";
+const comMargem = (v, e) => porDia(v) + (e ? `<small class="erro" title="Margem de erro de 95%; veja Como calculamos"> ±${porDia(e)}</small>` : "");
 const pct = v => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(Math.round(v)).toLocaleString(LOC) + "%";
 // Preço médio por unidade a que o item vendeu na casa, pelas vendas estimadas; null sem vendas.
 const vendeA = (vendas, id) => vendas.itens[id] > 0 && vendas.valores?.[id] ? Math.round(vendas.valores[id] / vendas.itens[id]) : null;
@@ -1189,7 +1318,7 @@ function calcularReceitas() {
     const exibido = !EN && catalogo.itens[item]?.[10] ? catalogo.itens[item][0] : nome;
     return {rid, recarga: horas, profId, categoria: categoria || "", nome: exibido, busca: (exibido + " " + nome).toLowerCase(), item, feitos, partes,
       custo: completo ? custo : null, bruto, lucro, margem: lucro != null && custo > 0 ? lucro / custo * 100 : null,
-      qtd: g ? g.qtd : 0, vdia: g ? g.vdia : null,
+      qtd: g ? g.qtd : 0, vdia: g ? g.vdia : null, verro: g ? g.verro : null,
       lucroDia: lucro != null && vezes != null ? Math.round(lucro * vezes) : null};
   });
   for (const l of todasReceitas) {
@@ -1225,11 +1354,11 @@ function desenharMateriais() {
       h += `<tr class="item abre" data-id="${g.id}" aria-expanded="${aberto}">
         <td class="nome">${iconeHtml(g)}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
           <span class="sm">Menor preço ${moeda(g.min)}</span>
-          <span class="sm">${[g.npc ? `NPC paga ${moeda(g.npc)}` : "", g.vdia != null ? `vende ~${porDia(g.vdia)}/dia` : ""].filter(Boolean).join(" · ")}</span></span></td>
+          <span class="sm">${[g.npc ? `NPC paga ${moeda(g.npc)}` : "", g.vdia != null ? `vende ~${porDia(g.vdia)}/dia${textoMargem(g.verro)}` : ""].filter(Boolean).join(" · ")}</span></span></td>
         <td class="num sd">${moeda(g.min)}</td><td class="num sd">${moeda(g.mercado)}</td>
         <td class="num ${npcMelhor ? "neg" : "pos"}">${moedaOuTraco(lucro)}</td><td class="num sd">${moedaOuTraco(g.npc)}</td>
         <td class="num">${g.qtd.toLocaleString(LOC)}</td>
-        <td class="num sd">${porDia(g.vdia)}</td><td class="num sd pos">${moedaOuTraco(lucroDia)}</td></tr>`;
+        <td class="num sd">${comMargem(g.vdia, g.verro)}</td><td class="num sd pos">${moedaOuTraco(lucroDia)}</td></tr>`;
       if (aberto) h += `<tr class="detalhe"><td colspan="8">${histHtml(g.id)}</td></tr>`;
     }
   }
@@ -1272,14 +1401,14 @@ function desenharProf() {
         ${l.feitos !== 1 ? `<span class="variantes">faz ${l.feitos} por vez</span>` : ""}
         ${dif != null ? `<span class="variantes dif-${dif}" title="Fica amarela com ${faixa[0]} de habilidade e cinza com ${faixa[1]}">${CORES_DIF[dif]}</span>` : ""}
         ${l.recarga ? `<span class="variantes" title="Só dá para fabricar uma vez a cada ${textoRecarga(l.recarga)}">recarga ${textoRecarga(l.recarga)}</span>` : ""}
-        <span class="sm">${esc(l.categoria)}${margem === "–" ? "" : ` · margem ${margem}`}${l.vdia != null ? ` · vende ~${porDia(l.vdia)}/dia` : ""}</span></span><button type="button" class="fav mais ${prefs.lista[l.rid] ? "ativo" : ""}" data-lista="${l.rid}" title="${prefs.lista[l.rid] ? "Tirar da lista de compras" : "Pôr na lista de compras"}" aria-label="Lista de compras" aria-pressed="${!!prefs.lista[l.rid]}">${prefs.lista[l.rid] ? "✓" : "＋"}</button></td>
+        <span class="sm">${esc(l.categoria)}${margem === "–" ? "" : ` · margem ${margem}`}${l.vdia != null ? ` · vende ~${porDia(l.vdia)}/dia${textoMargem(l.verro)}` : ""}</span></span><button type="button" class="fav mais ${prefs.lista[l.rid] ? "ativo" : ""}" data-lista="${l.rid}" title="${prefs.lista[l.rid] ? "Tirar da lista de compras" : "Pôr na lista de compras"}" aria-label="Lista de compras" aria-pressed="${!!prefs.lista[l.rid]}">${prefs.lista[l.rid] ? "✓" : "＋"}</button></td>
       <td class="sd">${esc(l.categoria)}</td>
       <td class="num sd">${moedaOuTraco(l.custo)}</td><td class="num sd">${moedaOuTraco(l.bruto)}</td>
       <td class="num ${sinal}">${moedaOuTraco(l.lucro)}</td>
       <td class="num sd ${sinal}">${margem}</td>
       <td class="num">${l.qtd.toLocaleString(LOC)}</td>
       <td class="num sd">${l.ate ? `até ${l.ate}` : "–"}</td>
-      <td class="num sd">${porDia(l.vdia)}</td><td class="num sd ${sinal}">${moedaOuTraco(l.lucroDia)}</td></tr>`;
+      <td class="num sd">${comMargem(l.vdia, l.verro)}</td><td class="num sd ${sinal}">${moedaOuTraco(l.lucroDia)}</td></tr>`;
     if (!aberto) continue;
     const materiais = l.partes.map(p => {
       const r = infoItem(p.id);
@@ -1388,10 +1517,10 @@ function desenharOfertas() {
       (!gira || g.vdia == null || g.vdia >= 1)).map(g => ({g, revenda: Math.round(g.media * (1 - corte)) - g.min}))
       .sort((a, b) => b.revenda - a.revenda).map(({g, revenda}) => `<tr class="item" data-id="${g.id}">
       <td class="nome">${iconeHtml(g)}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
-        <span class="sm">média ${moeda(g.media)} · ${g.qtd.toLocaleString(LOC)} à venda${g.vdia != null ? ` · vende ~${porDia(g.vdia)}/dia` : ""}</span></span></td>
+        <span class="sm">média ${moeda(g.media)} · ${g.qtd.toLocaleString(LOC)} à venda${g.vdia != null ? ` · vende ~${porDia(g.vdia)}/dia${textoMargem(g.verro)}` : ""}</span></span></td>
       <td class="num">${moeda(g.min)}</td><td class="num sd">${moeda(g.media)}</td><td class="num pos">${pct(g.tend)}</td>
       <td class="num sd ${revenda >= 0 ? "pos" : "neg"}">${moedaOuTraco(revenda)}</td>
-      <td class="num sd">${g.qtd.toLocaleString(LOC)}</td><td class="num sd">${porDia(g.vdia)}</td></tr>`);
+      <td class="num sd">${g.qtd.toLocaleString(LOC)}</td><td class="num sd">${comMargem(g.vdia, g.verro)}</td></tr>`);
   }
   $("cab-ofertas").innerHTML = cabecalho;
   $("linhas-ofertas").innerHTML = linhas.slice(0, 200).join("");
@@ -1441,7 +1570,7 @@ async function calcularArbitragem() {
       if (lucro <= 0 || venda > compra * VEZES_ABSURDAS) continue;
       linhasArb.push({id, g: o, origem: origem.casa, destino: destino.casa, compra, venda, lucro,
         margem: lucro / compra * 100, qtd: o.qtd, anunciosLa: d.anuncios,
-        vdia: horas >= HORAS_PARA_MOSTRAR ? (destino.vendas.itens[id] || 0) / horas * 24 : null});
+        vdia: horas >= HORAS_PARA_MOSTRAR ? (destino.vendas.itens[id] || 0) / horas * 24 : null, verro: margemVendas(destino.vendas, id)});
     }
   }
   return aqui;
@@ -1519,7 +1648,7 @@ function filtrarArb() {
     <td class="sd">${rotulo(l.origem)}</td><td class="num">${moeda(l.compra)}</td>
     <td class="sd">${rotulo(l.destino)}</td><td class="num sd">${moeda(l.venda)}</td>
     <td class="num pos">${moeda(l.lucro)}</td><td class="num sd">${Math.round(l.margem).toLocaleString(LOC)}%</td>
-    <td class="num sd">${l.qtd.toLocaleString(LOC)}</td><td class="num sd">${porDia(l.vdia)}</td></tr>`).join("");
+    <td class="num sd">${l.qtd.toLocaleString(LOC)}</td><td class="num sd">${comMargem(l.vdia, l.verro)}</td></tr>`).join("");
   $("aviso-arb").hidden = linhas.length > 0;
   $("aviso-arb").textContent = "Nenhuma oportunidade com esses filtros.";
 }
@@ -1751,11 +1880,11 @@ function desenhar() {
       <td class="nome">${icone}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
         ${varias ? `<span class="variantes">${g.variantes.length} variantes</span>` : ""}
         <span class="sm">${[g.nivel != null ? `Nível ${g.nivel}` : "", g.req ? `requer ${g.req}` : "",
-          g.vdia != null ? `vende ~${porDia(g.vdia)}/dia` : "", g.tend != null && Math.abs(g.tend) >= 5 ? `${pct(g.tend)} na semana` : ""].filter(Boolean).join(" · ")}</span></span><button type="button" class="fav ${prefs.favoritos.includes(g.id) ? "ativo" : ""}" data-fav="${g.id}" title="Favorito" aria-label="Favorito" aria-pressed="${prefs.favoritos.includes(g.id)}">★</button></td>
+          g.vdia != null ? `vende ~${porDia(g.vdia)}/dia${textoMargem(g.verro)}` : "", g.tend != null && Math.abs(g.tend) >= 5 ? `${pct(g.tend)} na semana` : ""].filter(Boolean).join(" · ")}</span></span><button type="button" class="fav ${prefs.favoritos.includes(g.id) ? "ativo" : ""}" data-fav="${g.id}" title="Favorito" aria-label="Favorito" aria-pressed="${prefs.favoritos.includes(g.id)}">★</button></td>
       <td class="num sd">${g.nivel ?? "–"}</td><td class="num sd">${g.req || "–"}</td>
       <td class="num">${g.qtd.toLocaleString(LOC)}</td>
       <td class="num sd ${g.tend == null || Math.abs(g.tend) < 5 ? "" : g.tend < 0 ? "pos" : "neg"}">${pct(g.tend)}</td>
-      <td class="num sd">${porDia(g.vdia)}</td>
+      <td class="num sd">${comMargem(g.vdia, g.verro)}</td>
       <td class="num sd">${moeda(g.mercado)}</td></tr>`;
     if (aberto) h += caixaHistorico(g.id);
     if (varias && aberto)
@@ -1793,6 +1922,7 @@ async function carregarCasa() {
   const temVendas = vendasCasa.horas >= HORAS_PARA_MOSTRAR;
   for (const g of grupos) {
     g.vdia = temVendas ? (vendasCasa.itens[g.id] || 0) / vendasCasa.horas * 24 : null;
+    g.verro = margemVendas(vendasCasa, g.id);
     g.media = dados.medias?.[g.id] ?? null;
     // Variação do menor preço de agora contra a média da semana, em %.
     g.tend = g.media && g.min != null ? (g.min / g.media - 1) * 100 : null;
@@ -1865,6 +1995,10 @@ function montarSeletorDeCasa(mercados) {
     (aqui && aqui.id !== casaPadrao() ? `<optgroup label="Preferência"><option value="padrao">★ Abrir sempre em ${esc(rotulo(aqui))}</option></optgroup>` : "");
   if (atual !== "") $("casa").value = atual;
 }
+$("abrir-metodo").onclick = () => $("metodo").showModal();
+$("fechar-metodo").onclick = () => $("metodo").close();
+// Clicar fora do painel também fecha.
+$("metodo").onclick = e => { if (e.target === $("metodo")) $("metodo").close(); };
 $("casa").onchange = () => {
   if ($("casa").value === "padrao") {
     prefs.casaPadrao = casaAtual.id; guardarPrefs();

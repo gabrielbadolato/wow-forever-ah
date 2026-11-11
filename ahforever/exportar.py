@@ -179,13 +179,21 @@ def _vendas(con, ruleset_id, casa_id, agora):
     segundos = con.execute(
         "SELECT SUM(intervalo_vendas) FROM coletas WHERE ruleset_id = ? AND casa_id = ? "
         "AND coletado_em >= ? AND tipo = 'itens'", casa).fetchone()[0] or 0
-    itens, valores = {}, {}
-    for item_id, quantidade, valor in con.execute(
-            "SELECT v.item_id, SUM(v.quantidade), SUM(v.valor) FROM vendas v JOIN coletas c ON c.id = v.coleta_id "
-            "WHERE c.ruleset_id = ? AND c.casa_id = ? AND c.coletado_em >= ? GROUP BY 1", casa):
-        itens[item_id], valores[item_id] = quantidade, valor
+    fotos = con.execute(
+        "SELECT COUNT(*) FROM coletas WHERE ruleset_id = ? AND casa_id = ? AND coletado_em >= ? "
+        "AND tipo = 'itens' AND intervalo_vendas IS NOT NULL", casa).fetchone()[0]
+    itens, valores, quadrados = {}, {}, {}
+    # Primeiro o total de cada item em cada foto, depois a soma e a soma dos quadrados entre as fotos.
+    for item_id, quantidade, quadrado, valor in con.execute(
+            "SELECT item_id, SUM(q), SUM(q * q), SUM(valor) FROM ("
+            "  SELECT v.item_id, c.coletado_em, SUM(v.quantidade) AS q, SUM(v.valor) AS valor "
+            "  FROM vendas v JOIN coletas c ON c.id = v.coleta_id "
+            "  WHERE c.ruleset_id = ? AND c.casa_id = ? AND c.coletado_em >= ? GROUP BY 1, 2) GROUP BY 1", casa):
+        itens[item_id], valores[item_id], quadrados[item_id] = quantidade, valor, quadrado
     # valores: cobre que essas vendas somaram; dividido pela quantidade dá o preço a que o item vende.
-    return {"horas": round(segundos / 3600, 1), "itens": itens, "valores": valores}
+    # fotos e quadrados: com eles a página calcula a margem de erro das vendas por dia (variação entre as fotos).
+    return {"horas": round(segundos / 3600, 1), "fotos": fotos, "itens": itens, "valores": valores,
+            "quadrados": quadrados}
 
 
 # A média só vale com um mínimo de fotos; antes disso um item novo pareceria sempre em promoção.
