@@ -1,4 +1,4 @@
-# Monitor da casa de leilões do WoW: Forever
+# Goblinomics: monitor da casa de leilões do WoW: Forever
 
 Coleta os leilões do WoW: Forever pela API da Blizzard, guarda o histórico de
 preços em SQLite, publica uma página de consulta no GitHub Pages, avisa no

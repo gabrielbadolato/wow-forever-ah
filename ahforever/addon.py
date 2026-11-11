@@ -8,7 +8,7 @@ ARQUIVO = f"addon/{NOME}.zip"
 INTERFACE = 16001
 
 TOC = f"""## Interface: {INTERFACE}
-## Title: AH Forever
+## Title: Goblinomics
 ## Notes: Mostra no tooltip os preços coletados pelo monitor da casa de leilões.
 ## Version: {{versao}}
 Dados.lua
@@ -55,7 +55,7 @@ end
 
 SLASH_AHFOREVER1 = "/ahf"
 SlashCmdList["AHFOREVER"] = function()
-  print("AH Forever: preços de " .. dados.casa .. ", coletados em " .. dados.quando .. ".")
+  print("Goblinomics: preços de " .. dados.casa .. ", coletados em " .. dados.quando .. ".")
 end
 """
 
