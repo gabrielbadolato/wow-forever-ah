@@ -34,9 +34,10 @@ def _catalogo(con):
 # Confirmado em 10/11/2026: na Coreia e em Taiwan, que só têm PvP e Normal, só os grupos 1 e 2
 # têm anúncios; nos EUA e na Europa, com quatro rulesets, têm os grupos 1, 2, 4 e 5. O grupo 3
 # (112/115/118) está vazio em todas as regiões; os textos do jogo citam um ruleset Hardcore.
-# Qual grupo é qual ruleset é inferência: segue a ordem dos ids dos rulesets, na Coreia e em
-# Taiwan o grupo 1 é várias vezes maior (lá o PvP sempre dominou) e a Horda é maioria nos
-# grupos 1 e 5 e a Aliança nos grupos 2 e 4, como é costume em PvP e em PvE.
+# O grupo 2 é o Normal: confirmado em 10/11/2026 com um anúncio-prova feito por um personagem
+# da Horda no Normal, que apareceu só na casa 114. O grupo 1 é, então, o PvP. Entre os dois de
+# Roleplay a ordem é inferência: segue a dos ids dos rulesets, e a Horda é maioria no grupo 5
+# e a Aliança no 4, como é costume em PvP e em PvE.
 MERCADOS = {1: "PvP", 2: "Normal", 3: "Sem uso", 4: "Roleplay", 5: "Roleplay PvP"}
 
 # Os tooltips vão em vários arquivos, para a página baixar só o pedaço do item apontado.

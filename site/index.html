@@ -1198,7 +1198,7 @@ async function abrirArbitragem() {
   if (estado.modo !== "arbitragem" || !aqui) return;
   $("nota-arb").textContent = `Compra em ${rotulo(aqui.casa)} para revender nas outras casas do mesmo ruleset (${nomeDoMercado(aqui.casa)}), e o caminho inverso. ` +
     "Compra pelo preço de mercado da origem; venda pelo menor anúncio do destino ou, se for menor, pelo preço médio a que o item tem vendido lá, menos a taxa de lá (5%; 15% na neutra). " +
-    "Só itens sem variantes. Cada ruleset tem três casas (Aliança, Horda, neutra); qual grupo de casas é qual ruleset é inferência: confira um preço no jogo.";
+    "Só itens sem variantes. Cada ruleset tem três casas (Aliança, Horda, neutra).";
   filtrarArb();
 }
 
