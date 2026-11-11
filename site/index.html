@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Goblinomics – WoW Forever</title>
+<meta name="description" content="Preços, lucro e oportunidades da casa de leilões do WoW: Forever. Prices, profit and opportunities from the WoW: Forever auction house.">
+<meta name="theme-color" content="#1b1b1b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icone-192.png">
+<link rel="apple-touch-icon" href="icone-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Goblinomics">
 <style>
 /* Visual baseado na casa de leilões moderna do jogo (a que o WoW: Forever usa): moldura cinza-chumbo,
    título dourado, abas penduradas embaixo, cabeçalhos de coluna em pílula, linhas zebradas com o preço
@@ -198,6 +205,12 @@ td.nome .fav { position: absolute; right: 4px; top: 50%; transform: translateY(-
 .comparar tr.aqui td { color: var(--ouro); }
 #atualizado a { color: var(--ouro-fosco); }
 .erro { font: 11px Arial, sans-serif; color: var(--fraco); }
+.prefs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 9px 12px 12px; }
+.prefs textarea { flex: 1 1 100%; background: #000; color: #fff; border: 1px solid #5a5a5a; border-radius: 6px; padding: 6px 8px; font: 12px ui-monospace, monospace; resize: vertical; }
+.prefs span { color: var(--fraco); font-size: 13px; }
+#boas-vindas { flex: none; padding: 10px 14px; font-size: 13px; line-height: 1.5; color: var(--texto); background: linear-gradient(#2a2410, #1a1608);
+  border-bottom: 1px solid #000; box-shadow: inset 0 0 0 1px rgba(201, 162, 39, .35); }
+#boas-vindas ul { margin: 4px 0 8px; padding-left: 20px; } #boas-vindas strong { color: var(--ouro); }
 .lema button { margin-left: 8px; padding: 0; border: 0; background: none; cursor: pointer; font: inherit; font-style: normal; color: var(--ouro-fosco); text-decoration: underline; }
 .lema button:hover { color: #fff; }
 #metodo { width: min(760px, calc(100vw - 16px)); max-height: calc(100vh - 32px); padding: 0; color: var(--texto); background: var(--janela);
@@ -353,6 +366,19 @@ html[lang=en] [data-l=pt], html:not([lang=en]) [data-l=en] { display: none; }
   </div>
 </header>
 <div id="velho" class="alerta" role="status" hidden></div>
+<div id="boas-vindas" data-nt hidden>
+  <div data-l="pt"><strong>Bem-vindo ao Goblinomics.</strong> O site lê a casa de leilões do WoW: Forever a cada hora e mostra onde está o lucro.
+    <ul><li><strong>Leilões</strong>: preços, histórico e vendas por dia de cada item.</li>
+      <li><strong>Profissões</strong> e <strong>Resumo</strong>: o que vale fabricar e o que fazer agora.</li>
+      <li><strong>Ofertas</strong> e <strong>Entre casas</strong>: o que está barato e o que revender em outra casa.</li></ul>
+    Escolha a sua casa no seletor <strong>Casa</strong> (cada ruleset e facção tem a sua) e marque-a como padrão.</div>
+  <div data-l="en"><strong>Welcome to Goblinomics.</strong> This site reads the WoW: Forever auction house every hour and shows where the profit is.
+    <ul><li><strong>Auctions</strong>: prices, history and sales per day for every item.</li>
+      <li><strong>Professions</strong> and <strong>Summary</strong>: what is worth crafting and what to do now.</li>
+      <li><strong>Deals</strong> and <strong>Across houses</strong>: what is cheap and what to resell in another house.</li></ul>
+    Pick your house in the <strong>House</strong> selector (each ruleset and faction has its own) and mark it as default.</div>
+  <button class="acao" type="button" id="fechar-boas-vindas" style="margin-top:8px"><span data-l="pt">Entendi</span><span data-l="en">Got it</span></button>
+</div>
 <main>
   <nav id="categorias" class="painel" aria-label="Categorias"></nav>
   <section class="painel" id="v-leiloes">
@@ -431,7 +457,7 @@ html[lang=en] [data-l=pt], html:not([lang=en]) [data-l=en] { display: none; }
           <th data-ordem="lucro" class="num">Lucro</th>
           <th data-ordem="margem" class="num sd">Margem</th>
           <th data-ordem="qtd" class="num">À venda</th>
-          <th data-ordem="ate" class="num sd" title="Quantas vezes vale fabricar de uma tacada: além disso o material encarece (ou acaba) e o lucro total para de crescer">Vale fabricar</th>
+          <th data-ordem="ate" class="num sd" title="Quantas vezes vale fabricar de uma tacada: além disso o material encarece (ou acaba), o lucro total para de crescer ou passa do que o mercado vende num dia">Vale fabricar</th>
           <th data-ordem="vdia" class="num sd" title="Vendas estimadas do item pronto por dia">Vendas/dia</th>
           <th data-ordem="lucroDia" class="num sd" title="Lucro por fabricação vezes o que o mercado absorve por dia">Lucro/dia</th>
         </tr></thead>
@@ -479,10 +505,10 @@ html[lang=en] [data-l=pt], html:not([lang=en]) [data-l=en] { display: none; }
     <p class="nota" id="nota-arb"></p>
     <div class="rolagem">
       <table>
-        <thead><tr><th>Item</th><th class="sd">Comprar em</th><th class="num">Preço</th><th class="sd">Vender em</th>
-          <th class="num sd" title="O menor anúncio do destino ou, se for menor, o preço médio a que o item tem vendido lá">Preço lá</th><th class="num" title="Preço lá, menos a taxa de lá, menos o preço de compra">Lucro (un.)</th>
-          <th class="num sd">Margem</th><th class="num sd" title="Unidades à venda na casa de origem">Disponível</th>
-          <th class="num sd" title="Vendas estimadas por dia na casa de destino">Vendas/dia lá</th></tr></thead>
+        <thead><tr id="cab-arb"><th data-o="nome">Item</th><th class="sd">Comprar em</th><th data-o="compra" class="num">Preço</th><th class="sd">Vender em</th>
+          <th data-o="venda" class="num sd" title="O menor anúncio do destino ou, se for menor, o preço médio a que o item tem vendido lá">Preço lá</th><th data-o="lucro" class="num" title="Preço lá, menos a taxa de lá, menos o preço de compra">Lucro (un.)</th>
+          <th data-o="margem" class="num sd">Margem</th><th data-o="qtd" class="num sd" title="Unidades à venda na casa de origem">Disponível</th>
+          <th data-o="vdia" class="num sd" title="Vendas estimadas por dia na casa de destino">Vendas/dia lá</th></tr></thead>
         <tbody id="linhas-arb"></tbody>
       </table>
     </div>
@@ -524,6 +550,25 @@ html[lang=en] [data-l=pt], html:not([lang=en]) [data-l=en] { display: none; }
       </table>
     </div>
     <div id="aviso-carteira" class="aviso" hidden></div>
+    <div id="bloco-vendidos" hidden>
+      <h2 class="titulo-bloco">Vendas realizadas</h2>
+      <p class="nota" id="nota-vendidos"></p>
+      <div class="rolagem">
+        <table>
+          <thead><tr><th>Item</th><th class="num">Quantidade</th><th class="num sd">Paguei (un.)</th><th class="num sd">Vendi (un.)</th>
+            <th class="num">Lucro</th><th class="num sd">Data</th><th></th></tr></thead>
+          <tbody id="linhas-vendidos"></tbody>
+        </table>
+      </div>
+    </div>
+    <h2 class="titulo-bloco">Outro aparelho</h2>
+    <p class="nota">Favoritos, lista, carteira, profissões e casa padrão ficam guardados só neste navegador. Para levá-los a outro aparelho, gere o código aqui e cole lá.</p>
+    <form id="filtros-lista-prefs" class="prefs" onsubmit="return false">
+      <textarea id="codigo-prefs" rows="3" spellcheck="false" placeholder="Cole aqui o código gerado no outro aparelho" aria-label="Código das preferências"></textarea>
+      <button class="acao" type="button" id="gerar-codigo">Gerar código</button>
+      <button class="acao" type="button" id="usar-codigo">Usar este código</button>
+      <span id="aviso-codigo" role="status"></span>
+    </form>
   </section>
 </main>
 <p class="sm fa">Site de fã, sem vínculo com a Blizzard Entertainment. World of Warcraft e o logo são marcas da Blizzard.</p>
@@ -569,7 +614,7 @@ html[lang=en] [data-l=pt], html:not([lang=en]) [data-l=en] { display: none; }
     <ul>
       <li><strong>Venda</strong>: pelo menor preço de agora, menos a taxa da casa (5%; 15% na casa neutra).</li>
       <li><strong>Materiais</strong>: preço de mercado, preço de NPC quando for menor ou, se sair mais barato, o custo de fabricar o material.</li>
-      <li><strong>Vale fabricar até N</strong>: o material é comprado do anúncio mais barato ao mais caro; N é onde o lucro total para de crescer ou o material acaba.</li>
+      <li><strong>Vale fabricar até N</strong>: o material é comprado do anúncio mais barato ao mais caro; N é onde o lucro total para de crescer, o material acaba ou se chega ao que o mercado vende num dia.</li>
       <li><strong>Lucro por dia</strong>: lucro de uma fabricação vezes o que o mercado vende por dia, limitado pela recarga da receita.</li>
     </ul>
     <p>Não entram na conta: o depósito do anúncio (perdido se o item não vender), o tempo de fabricação e a queda de preço que acontece quando você anuncia muito de uma vez.</p>
@@ -619,7 +664,7 @@ html[lang=en] [data-l=pt], html:not([lang=en]) [data-l=en] { display: none; }
     <ul>
       <li><strong>Sale</strong>: at the current lowest price, minus the house cut (5%; 15% at the neutral house).</li>
       <li><strong>Materials</strong>: market price, vendor price when lower or, if cheaper, the cost of crafting the material.</li>
-      <li><strong>Worth crafting up to N</strong>: materials are bought from the cheapest listing upwards; N is where total profit stops growing or materials run out.</li>
+      <li><strong>Worth crafting up to N</strong>: materials are bought from the cheapest listing upwards; N is where total profit stops growing, materials run out, or one day of market sales is reached.</li>
       <li><strong>Profit per day</strong>: profit of one craft times what the market sells per day, capped by the recipe's cooldown.</li>
     </ul>
     <p>Not included: the listing deposit (lost if the item does not sell), crafting time, and the price drop that happens when you list a lot at once.</p>
@@ -657,7 +702,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", 
 
 let meta, catalogo, bonusJogo, grupos = [], filtrados = [];
 // Preferências de quem usa, guardadas só neste navegador.
-const prefs = {profissoes: [], favoritos: [], lista: {}, habilidade: {}, modo: null, casa: null, carteira: [], lingua: null, casaPadrao: null};
+const prefs = {profissoes: [], favoritos: [], lista: {}, habilidade: {}, modo: null, casa: null, carteira: [], vendidos: [], lingua: null, casaPadrao: null, visto: false};
 try { Object.assign(prefs, JSON.parse(localStorage.getItem("ah-forever") || "{}")); } catch {}
 // Idioma da interface e dos nomes: o escolhido no botão ou, na primeira visita, o do navegador.
 const LINGUA = prefs.lingua || ((navigator.language || "pt").toLowerCase().startsWith("pt") ? "pt" : "en");
@@ -715,7 +760,12 @@ const TEXTOS_EN = {
   "Pelo menos uma venda estimada por dia nesta casa": "At least one estimated sale per day in this house",
   "Unidades à venda na casa de origem": "Units listed in the origin house", "Vendas estimadas por dia na casa de destino": "Estimated sales per day in the destination house",
   "Preço lá, menos a taxa de lá, menos o preço de compra": "Price there, minus the cut there, minus the purchase price",
-  "Como calculamos": "How we calculate", "Margem de erro de 95%; veja Como calculamos": "95% margin of error; see How we calculate",
+  "Como calculamos": "How we calculate", "Vendas realizadas": "Realized sales", "Vendi (un.)": "Sold (each)", "Data": "Date",
+  "Outro aparelho": "Another device", "Gerar código": "Generate code", "Usar este código": "Use this code",
+  "Cole aqui o código gerado no outro aparelho": "Paste here the code generated on the other device", "Código das preferências": "Preferences code",
+  "Registrar venda": "Record sale", "Apagar este registro": "Delete this record", "Código copiado. Cole no outro aparelho.": "Code copied. Paste it on the other device.",
+  "Copie o código acima e cole no outro aparelho.": "Copy the code above and paste it on the other device.", "Esse código não é válido.": "That code is not valid.",
+  "vendi": "sold", "Margem de erro de 95%; veja Como calculamos": "95% margin of error; see How we calculate",
   "Unidades à venda abaixo do preço de NPC": "Units listed below the vendor price",
   "NPC paga menos o que você gasta, somando todas as unidades": "What the vendor pays minus what you spend, over all units",
   "Média menos a taxa da casa, menos o preço de agora": "Average minus the house cut, minus the current price",
@@ -747,6 +797,9 @@ const FRASES_EN = [
   ["A carteira está vazia. Na aba Leilões, abra um item e use \"Pôr na carteira\" para registrar o que comprou.", "The portfolio is empty. In the Auctions tab, open an item and use \"Add to portfolio\" to record what you bought."],
   ["Registre o que comprou para revender e acompanhe quanto vale. Fica guardada só neste navegador.", "Record what you bought to resell and track what it is worth. It is stored only in this browser."],
   ["Fica guardada só neste navegador.", "It is stored only in this browser."],
+  ["Favoritos, lista, carteira, profissões e casa padrão ficam guardados só neste navegador. Para levá-los a outro aparelho, gere o código aqui e cole lá.",
+   "Favorites, list, portfolio, professions and default house are stored only in this browser. To take them to another device, generate the code here and paste it there."],
+  ["Lucro realizado, já sem a taxa da casa:", "Realized profit, after the house cut:"],
   ["Para mais do que isso não há material à venda.", "There is not enough material listed for more than that."],
   ["Depois disso o material encarece e o lucro total para de crescer.", "Beyond that, materials get pricier and total profit stops growing."],
   ["Nada com lucro nos anúncios de agora.", "Nothing profitable in the current listings."],
@@ -764,7 +817,7 @@ const FRASES_EN = [
   ["Sua habilidade nesta profissão. A receita ganha a cor do jogo: laranja sempre dá ponto, amarela quase sempre, verde raramente, cinza nunca. O jogo não informa em que nível cada receita é aprendida, então uma laranja pode ainda não estar ao seu alcance.",
    "Your skill in this profession. Recipes get the in-game colour: orange always gives a point, yellow almost always, green rarely, grey never. The game does not say at which level each recipe is learned, so an orange one may still be out of reach."],
   ["Menor preço menos a taxa da casa de leilões (5%; 15% na neutra)", "Lowest price minus the auction house cut (5%; 15% at the neutral house)"],
-  ["Quantas vezes vale fabricar de uma tacada: além disso o material encarece (ou acaba) e o lucro total para de crescer", "How many crafts are worth doing in one go: beyond that materials get pricier (or run out) and total profit stops growing"],
+  ["Quantas vezes vale fabricar de uma tacada: além disso o material encarece (ou acaba), o lucro total para de crescer ou passa do que o mercado vende num dia", "How many crafts are worth doing in one go: beyond that materials get pricier (or run out), total profit stops growing, or it exceeds what the market sells in a day"],
   ["Com vendas observadas no destino, exige pelo menos uma por dia; sem elas, pelo menos dois anúncios lá", "With observed sales at the destination, requires at least one per day; without them, at least two listings there"],
   ["O menor anúncio do destino ou, se for menor, o preço médio a que o item tem vendido lá", "The destination's lowest listing or, if lower, the average price the item has been selling for there"],
   ["Menor preço de agora menos a taxa da casa, menos o que você pagou, vezes a quantidade", "Current lowest price minus the house cut, minus what you paid, times the quantity"],
@@ -801,14 +854,17 @@ const PADROES_EN = [
   [/Ver tudo de /, "See all of "], [new RegExp(`comprar ${NUM}`), "buy $1"], [new RegExp(`levar ${NUM} para `), "take $1 to "],
   [new RegExp(`só ${NUM} à venda`), "only $1 listed"], [new RegExp(`${NUM} à venda`), "$1 listed"], [/^média$/, "average"], [/^· média$/, "· average"],
   [/ cada(?= ·|$)/, " each"], [/leilão · /, "auction · "], [/NPC · /, "vendor · "],
-  [/^(.+) por$/, "$1 for"], [/^· lucro$/, "· profit"], [/· resultado$/, "· result"], [/· agora$/, "· now"],
+  [/^(.+) por$/, "$1 for"], [/^· lucro$/, "· profit"], [/· resultado$/, "· result"], [/· vendi$/, "· sold"], [/· paguei$/, "· paid"], [/· agora$/, "· now"],
   [/· preços de (.+?);/, "· prices from $1;"], [/vendendo tudo agora em (.+?), já sem a taxa:/, "selling everything now at $1, after the cut:"],
   [/^Paguei$/, "Paid"], [/★ Abrir sempre em /, "★ Always open at "], [/★ padrão/, "★ default"],
   [/\bHorda\b/g, "Horde"], [/Aliança/g, "Alliance"], [/\bNeutra\b/g, "Neutral"],
 ];
 FRASES_EN.sort((a, b) => b[0].length - a[0].length);
 function emIngles(texto) {
-  const junto = texto.replace(/\s+/g, " "), limpo = junto.trim();
+  const junto = texto.replace(/\s+/g, " "), seta = junto.match(/ [▲▼]\s*$/);
+  // Cabeçalho com a seta de ordenação: traduz o texto e devolve a seta ao lugar.
+  if (seta) return emIngles(junto.slice(0, seta.index)) + seta[0];
+  const limpo = junto.trim();
   if (!limpo || !/[A-Za-zÀ-ú]/.test(limpo)) return texto;
   // Os espaços das pontas ficam como estavam; a tradução trabalha só no miolo.
   const [antes, depois] = junto.split(limpo);
@@ -1290,11 +1346,14 @@ const PASSOS_FABRICAR = [1, 2, 3, 5, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300,
 // Até quantas vezes o lucro total ainda cresce. limite: por que parou ("material" acabou ou "preço" subiu).
 function melhorLote(l) {
   let melhor = null;
-  for (const n of l.recarga ? [1] : PASSOS_FABRICAR) {
+  // Fabricar mais do que o mercado vende num dia só encalha estoque: o lote para aí.
+  const teto = l.vdia == null ? Infinity : Math.max(1, Math.floor(l.vdia / l.feitos));
+  const passos = l.recarga ? [1] : [...PASSOS_FABRICAR.filter(n => n < teto), ...(teto === Infinity ? [] : [teto])];
+  for (const n of passos) {
     const lucro = lucroFabricando(l, n);
     if (lucro == null) { if (melhor) melhor.limite = "material"; break; }
     if (melhor && lucro <= melhor.lucro) { melhor.limite = "preço"; break; }
-    melhor = {n, lucro};
+    melhor = {n, lucro, limite: n === teto ? "giro" : null};
   }
   return melhor && melhor.lucro > 0 ? melhor : null;
 }
@@ -1419,7 +1478,7 @@ function desenharProf() {
     h += `<tr class="detalhe"><td colspan="10"><div class="sm" style="margin-bottom:6px">Materiais ${moedaOuTraco(l.custo)} · venda líquida ${moedaOuTraco(l.bruto)}${l.lucroDia != null ? ` · lucro/dia ${moedaOuTraco(l.lucroDia)}` : ""}</div>
       ${l.ate ? `<div style="margin:0 0 8px">Vale fabricar até <strong>${l.ate}</strong> de uma vez: lucro total ${moeda(l.lucroLote)}.
         ${l.limite === "material" ? "Para mais do que isso não há material à venda." : l.limite === "preço" ? "Depois disso o material encarece e o lucro total para de crescer." : ""}
-        ${l.vdia != null && l.ate * l.feitos > l.vdia ? `O mercado vende só ~${porDia(l.vdia)} por dia.` : ""}</div>` : ""}
+        ${l.limite === "giro" ? `O mercado vende só ~${porDia(l.vdia)} por dia.` : ""}</div>` : ""}
       ${faixa ? `<div class="rotulo" style="margin:0 0 6px">Dá ponto de habilidade até ${faixa[1]} (amarela a partir de ${faixa[0]})</div>` : ""}
       <table class="reagentes">${materiais}</table>${semHover ? `<div class="atributos" data-id="${l.item}"></div>` : ""}${histHtml(l.item)}</td></tr>`;
   }
@@ -1488,21 +1547,47 @@ async function abrirProfissoes() {
   calcularReceitas(); montarProfissoes(); filtrarProf();
 }
 
+// Ordena uma lista de objetos pela chave; nomes em ordem alfabética, vazios sempre no fim.
+function ordenarPor(lista, chave, sentido) {
+  return lista.sort((a, b) => typeof a[chave] === "string" ? sentido * a[chave].localeCompare(b[chave])
+    : a[chave] == null || b[chave] == null ? (a[chave] == null) - (b[chave] == null) : sentido * (a[chave] - b[chave]));
+}
+// Marca no cabeçalho a coluna que ordena a tabela (th com data-o).
+function marcarOrdem(cabecalho, estadoDaTabela) {
+  for (const th of cabecalho.querySelectorAll("th[data-o]")) {
+    const ativo = th.dataset.o === estadoDaTabela.ordem;
+    th.style.cursor = "pointer";
+    th.textContent = th.textContent.replace(/ [▲▼]$/, "") + (ativo ? (estadoDaTabela.sentido > 0 ? " ▲" : " ▼") : "");
+    th.setAttribute("aria-sort", ativo ? (estadoDaTabela.sentido > 0 ? "ascending" : "descending") : "none");
+  }
+}
+function aoClicarNaOrdem(e, estadoDaTabela, redesenhar) {
+  const th = e.target.closest("th[data-o]");
+  if (!th) return;
+  if (estadoDaTabela.ordem === th.dataset.o) estadoDaTabela.sentido *= -1;
+  else { estadoDaTabela.ordem = th.dataset.o; estadoDaTabela.sentido = th.dataset.o === "nome" ? 1 : -1; }
+  redesenhar();
+}
+const ordemOfertas = {tipo: null, ordem: null, sentido: -1}, ordemArb = {ordem: "lucro", sentido: -1};
+
 // ---- Ofertas: o que está barato agora nesta casa ----
 function desenharOfertas() {
   const tipo = $("o-tipo").value, nome = $("o-nome").value.trim().toLowerCase();
   const descMin = num("o-desc") ?? 0, gira = $("o-gira").checked, corte = corteDaCasa();
   $("o-rotulo-desc").hidden = $("o-rotulo-gira").hidden = tipo === "npc";
   let linhas, cabecalho;
+  // Cada tipo de oferta tem as suas colunas; ao trocar de tipo, volta a ordem padrão (o que rende mais primeiro).
+  if (ordemOfertas.tipo !== tipo) Object.assign(ordemOfertas, {tipo, ordem: tipo === "npc" ? "lucro" : "revenda", sentido: -1});
   if (tipo === "npc") {
     $("nota-ofertas").textContent = "Itens anunciados por menos do que um vendedor NPC paga: comprar e vender ao NPC dá lucro na hora. " +
       "O preço de NPC vem do cadastro do item e não foi conferido um a um no Forever: confira no tooltip do jogo antes de comprar muito.";
-    cabecalho = `<th>Item</th><th class="num">Preço</th><th class="num sd">NPC paga</th><th class="num sd" title="Unidades à venda abaixo do preço de NPC">Unidades</th><th class="num" title="NPC paga menos o que você gasta, somando todas as unidades">Lucro total</th>`;
+    cabecalho = `<th data-o="nome">Item</th><th data-o="min" class="num">Preço</th><th data-o="npc" class="num sd">NPC paga</th><th data-o="unidades" class="num sd" title="Unidades à venda abaixo do preço de NPC">Unidades</th><th data-o="lucro" class="num" title="NPC paga menos o que você gasta, somando todas as unidades">Lucro total</th>`;
     linhas = grupos.filter(g => g.npc && g.min != null && g.min < g.npc && (!nome || g.busca.includes(nome))).map(g => {
       // Em cada variante, compra-se até o ponto em que a próxima unidade já custa mais do que o NPC paga.
       const {unidades, lucro} = melhorCompra(g, g.npc);
-      return {g, unidades, lucro};
-    }).sort((a, b) => b.lucro - a.lucro).map(({g, unidades, lucro}) => `<tr class="item" data-id="${g.id}">
+      return {g, nome: g.nome, min: g.min, npc: g.npc, unidades, lucro};
+    });
+    linhas = ordenarPor(linhas, ordemOfertas.ordem, ordemOfertas.sentido).map(({g, unidades, lucro}) => `<tr class="item" data-id="${g.id}">
       <td class="nome">${iconeHtml(g)}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
         <span class="sm">NPC paga ${moeda(g.npc)} · ${unidades.toLocaleString(LOC)} un.</span></span></td>
       <td class="num">${moeda(g.min)}</td><td class="num sd">${moeda(g.npc)}</td>
@@ -1511,11 +1596,11 @@ function desenharOfertas() {
     $("nota-ofertas").textContent = "Itens cujo menor preço de agora está abaixo da média dos menores preços dos últimos 7 dias nesta casa. " +
       `Revenda: o que sobra por unidade vendendo pela média, já sem a taxa da casa (${Math.round(corte * 100)}%). ` +
       "Um preço baixo pode ser só o mercado caindo: abra o item na aba Leilões e veja o histórico. A média só existe depois de 6 coletas.";
-    cabecalho = `<th>Item</th><th class="num">Preço</th><th class="num sd">Média 7 dias</th><th class="num">Desconto</th>
-      <th class="num sd" title="Média menos a taxa da casa, menos o preço de agora">Revenda (un.)</th><th class="num sd">À venda</th><th class="num sd">Vendas/dia</th>`;
+    cabecalho = `<th data-o="nome">Item</th><th data-o="min" class="num">Preço</th><th data-o="media" class="num sd">Média 7 dias</th><th data-o="tend" class="num">Desconto</th>
+      <th data-o="revenda" class="num sd" title="Média menos a taxa da casa, menos o preço de agora">Revenda (un.)</th><th data-o="qtd" class="num sd">À venda</th><th data-o="vdia" class="num sd">Vendas/dia</th>`;
     linhas = grupos.filter(g => g.tend != null && -g.tend >= Math.max(descMin, 1) && (!nome || g.busca.includes(nome)) &&
-      (!gira || g.vdia == null || g.vdia >= 1)).map(g => ({g, revenda: Math.round(g.media * (1 - corte)) - g.min}))
-      .sort((a, b) => b.revenda - a.revenda).map(({g, revenda}) => `<tr class="item" data-id="${g.id}">
+      (!gira || g.vdia == null || g.vdia >= 1)).map(g => ({g, nome: g.nome, min: g.min, media: g.media, tend: g.tend, qtd: g.qtd, vdia: g.vdia, revenda: Math.round(g.media * (1 - corte)) - g.min}));
+    linhas = ordenarPor(linhas, ordemOfertas.ordem, ordemOfertas.sentido).map(({g, revenda}) => `<tr class="item" data-id="${g.id}">
       <td class="nome">${iconeHtml(g)}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
         <span class="sm">média ${moeda(g.media)} · ${g.qtd.toLocaleString(LOC)} à venda${g.vdia != null ? ` · vende ~${porDia(g.vdia)}/dia${textoMargem(g.verro)}` : ""}</span></span></td>
       <td class="num">${moeda(g.min)}</td><td class="num sd">${moeda(g.media)}</td><td class="num pos">${pct(g.tend)}</td>
@@ -1523,6 +1608,7 @@ function desenharOfertas() {
       <td class="num sd">${g.qtd.toLocaleString(LOC)}</td><td class="num sd">${comMargem(g.vdia, g.verro)}</td></tr>`);
   }
   $("cab-ofertas").innerHTML = cabecalho;
+  marcarOrdem($("cab-ofertas"), ordemOfertas);
   $("linhas-ofertas").innerHTML = linhas.slice(0, 200).join("");
   $("aviso-ofertas").hidden = linhas.length > 0;
   $("aviso-ofertas").textContent = "Nenhuma oferta com esses filtros.";
@@ -1626,13 +1712,49 @@ function desenharCarteira() {
       <td class="num sd">${g?.min == null ? "–" : moeda(g.min)}</td>
       <td class="num ${lucro == null ? "" : lucro >= 0 ? "pos" : "neg"}">${moedaOuTraco(lucro)}</td>
       <td class="num sd ${g?.tend == null || Math.abs(g.tend) < 5 ? "" : g.tend > 0 ? "pos" : "neg"}">${pct(g?.tend)}</td>
-      <td><button type="button" class="fav" data-vendi="${n}" title="Tirar da carteira" aria-label="Tirar da carteira">✕</button></td></tr>`;
+      <td style="white-space:nowrap"><button type="button" class="fav mais" data-vendi-por="${n}" title="Registrar venda" aria-label="Registrar venda">✓</button><button type="button" class="fav" data-vendi="${n}" title="Tirar da carteira" aria-label="Tirar da carteira">✕</button></td></tr>`;
   }).join("");
   $("aviso-carteira").hidden = prefs.carteira.length > 0;
   $("aviso-carteira").textContent = "A carteira está vazia. Na aba Leilões, abra um item e use \"Pôr na carteira\" para registrar o que comprou.";
   $("nota-carteira").innerHTML = prefs.carteira.length
     ? `Paguei ${moeda(pago)} · vendendo tudo agora em ${esc(rotulo(casaAtual))}, já sem a taxa: ${moeda(vale)} · resultado <span class="${vale - pago >= 0 ? "pos" : "neg"}">${moedaOuTraco(vale - pago)}</span>. Fica guardada só neste navegador.`
     : "Registre o que comprou para revender e acompanhe quanto vale. Fica guardada só neste navegador.";
+  // Vendas realizadas: o que saiu da carteira pelo ✓, com o lucro de fato.
+  let realizado = 0;
+  $("linhas-vendidos").innerHTML = prefs.vendidos.map((v, n) => {
+    const i = infoItem(v.id), lucro = (v.liquido - v.pago) * v.q;
+    realizado += lucro;
+    return `<tr class="item" data-id="${v.id}"><td class="nome">${iconeHtml(i)}<span><span class="q-${i.qualidade}">${esc(i.nome)}</span>
+        <span class="sm">${new Date(v.quando).toLocaleDateString(LOC)} · paguei ${moeda(v.pago)} · vendi ${moeda(v.vendido)}</span></span></td>
+      <td class="num">${v.q.toLocaleString(LOC)}</td><td class="num sd">${moeda(v.pago)}</td><td class="num sd">${moeda(v.vendido)}</td>
+      <td class="num ${lucro >= 0 ? "pos" : "neg"}">${moedaOuTraco(lucro)}</td><td class="num sd">${new Date(v.quando).toLocaleDateString(LOC)}</td>
+      <td><button type="button" class="fav" data-apagar-venda="${n}" title="Apagar este registro" aria-label="Apagar este registro">✕</button></td></tr>`;
+  }).join("");
+  $("bloco-vendidos").hidden = !prefs.vendidos.length;
+  $("nota-vendidos").innerHTML = `Lucro realizado, já sem a taxa da casa: <span class="${realizado >= 0 ? "pos" : "neg"}">${moedaOuTraco(realizado)}</span>.`;
+}
+
+// Preferências num código de texto, para levar de um aparelho a outro sem conta nem servidor.
+const MARCA_DO_CODIGO = "GBX1:";
+const CAMPOS_DO_CODIGO = ["profissoes", "favoritos", "lista", "habilidade", "carteira", "vendidos", "casaPadrao", "lingua"];
+function codigoDasPrefs() {
+  const dados = Object.fromEntries(CAMPOS_DO_CODIGO.map(c => [c, prefs[c]]));
+  return MARCA_DO_CODIGO + btoa(unescape(encodeURIComponent(JSON.stringify(dados))));
+}
+function lerCodigo(texto) {
+  texto = texto.trim();
+  if (!texto.startsWith(MARCA_DO_CODIGO)) throw new Error("código inválido");
+  const dados = JSON.parse(decodeURIComponent(escape(atob(texto.slice(MARCA_DO_CODIGO.length)))));
+  // Só entram os campos conhecidos e do tipo certo; o resto do código é ignorado.
+  const modelo = {profissoes: [], favoritos: [], lista: {}, habilidade: {}, carteira: [], vendidos: []};
+  const limpo = {};
+  for (const campo of CAMPOS_DO_CODIGO) {
+    const valor = dados[campo];
+    if (valor == null) continue;
+    if (campo in modelo ? Array.isArray(valor) === Array.isArray(modelo[campo]) && typeof valor === "object"
+        : campo === "casaPadrao" ? Number.isInteger(valor) : ["pt", "en"].includes(valor)) limpo[campo] = valor;
+  }
+  return limpo;
 }
 
 function filtrarArb() {
@@ -1641,7 +1763,10 @@ function filtrarArb() {
   // Entre Aliança e Horda a mercadoria só passa pela casa neutra; com a neutra, a revenda é direta.
   const comNeutra = l => faccao(l.origem.nome) === "Neutra" || faccao(l.destino.nome) === "Neutra";
   const linhas = linhasArb.filter(l => (!rota || comNeutra(l) === (rota === "neutra")) && (!nome || l.g.busca.includes(nome)) && l.lucro >= lucroMin && l.margem >= margemMin &&
-    (!gira || (l.vdia != null ? l.vdia >= 1 : l.anunciosLa >= 2))).sort((a, b) => b.lucro - a.lucro);
+    (!gira || (l.vdia != null ? l.vdia >= 1 : l.anunciosLa >= 2)));
+  for (const l of linhas) l.nome = l.g.nome;
+  ordenarPor(linhas, ordemArb.ordem, ordemArb.sentido);
+  marcarOrdem($("cab-arb"), ordemArb);
   $("linhas-arb").innerHTML = linhas.slice(0, 200).map(l => `<tr class="item" data-id="${l.id}">
     <td class="nome">${iconeHtml(l.g)}<span><span class="q-${l.g.qualidade}">${esc(l.g.nome)}</span>
       <span class="sm">${rotulo(l.origem)} → ${rotulo(l.destino)} por ${moeda(l.venda)}${l.vdia != null ? ` · vende ~${porDia(l.vdia)}/dia lá` : ""}</span></span></td>
@@ -1995,6 +2120,8 @@ function montarSeletorDeCasa(mercados) {
     (aqui && aqui.id !== casaPadrao() ? `<optgroup label="Preferência"><option value="padrao">★ Abrir sempre em ${esc(rotulo(aqui))}</option></optgroup>` : "");
   if (atual !== "") $("casa").value = atual;
 }
+$("boas-vindas").hidden = prefs.visto;
+$("fechar-boas-vindas").onclick = () => { prefs.visto = true; guardarPrefs(); $("boas-vindas").hidden = true; };
 $("abrir-metodo").onclick = () => $("metodo").showModal();
 $("fechar-metodo").onclick = () => $("metodo").close();
 // Clicar fora do painel também fecha.
@@ -2083,8 +2210,36 @@ $("v-lista").onchange = e => {
 $("v-lista").onclick = e => {
   const vendi = e.target.closest("[data-vendi]");
   if (vendi) { prefs.carteira.splice(+vendi.dataset.vendi, 1); guardarPrefs(); desenharCarteira(); return; }
+  const vendiPor = e.target.closest("[data-vendi-por]");
+  if (vendiPor) {
+    const c = prefs.carteira[+vendiPor.dataset.vendiPor], agora = porItem.get(c.id)?.min ?? c.pago;
+    const resposta = prompt(EN ? "Price each unit sold for, in gold:" : "Por quanto vendeu cada unidade, em ouro:", String(agora / 10000));
+    const ouro = resposta == null ? NaN : +resposta.replace(",", ".");
+    if (!(ouro >= 0)) return;
+    const vendido = Math.round(ouro * 10000);
+    // A taxa é a da casa em que a pessoa está agora; fica gravada para o lucro não mudar depois.
+    prefs.vendidos.unshift({id: c.id, q: c.q, pago: c.pago, vendido, liquido: Math.round(vendido * (1 - corteDaCasa())), quando: new Date().toISOString()});
+    prefs.carteira.splice(+vendiPor.dataset.vendiPor, 1);
+    guardarPrefs(); desenharCarteira(); return;
+  }
+  const apagar = e.target.closest("[data-apagar-venda]");
+  if (apagar) { prefs.vendidos.splice(+apagar.dataset.apagarVenda, 1); guardarPrefs(); desenharCarteira(); return; }
   const tirar = e.target.closest("[data-tirar]");
   if (tirar) { delete prefs.lista[tirar.dataset.tirar]; guardarPrefs(); desenharLista(); }
+};
+$("gerar-codigo").onclick = async () => {
+  $("codigo-prefs").value = codigoDasPrefs();
+  $("codigo-prefs").select();
+  try { await navigator.clipboard.writeText($("codigo-prefs").value); $("aviso-codigo").textContent = "Código copiado. Cole no outro aparelho."; }
+  catch { $("aviso-codigo").textContent = "Copie o código acima e cole no outro aparelho."; }
+};
+$("usar-codigo").onclick = () => {
+  let novas;
+  try { novas = lerCodigo($("codigo-prefs").value); }
+  catch { $("aviso-codigo").textContent = "Esse código não é válido."; return; }
+  if (!confirm(EN ? "Replace this browser's favorites, list, portfolio and professions with the ones in the code?"
+                  : "Trocar os favoritos, a lista, a carteira e as profissões deste navegador pelos do código?")) return;
+  Object.assign(prefs, novas); guardarPrefs(); location.reload();
 };
 $("limpar-lista").onclick = () => { prefs.lista = {}; guardarPrefs(); desenharLista(); };
 $("copiar-lista").onclick = async () => {
@@ -2093,6 +2248,8 @@ $("copiar-lista").onclick = async () => {
   catch { botao.textContent = "Não deu para copiar"; }
   setTimeout(() => { botao.textContent = "Copiar lista"; }, 1500);
 };
+$("cab-ofertas").onclick = e => aoClicarNaOrdem(e, ordemOfertas, desenharOfertas);
+$("cab-arb").onclick = e => aoClicarNaOrdem(e, ordemArb, filtrarArb);
 let esperaOfertas;
 $("filtros-ofertas").oninput = () => { clearTimeout(esperaOfertas); esperaOfertas = setTimeout(desenharOfertas, 120); };
 let esperaArb;
