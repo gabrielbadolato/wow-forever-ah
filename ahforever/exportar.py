@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 
-from . import addon, banco, bonus, compactar
+from . import addon, banco, bonus, catalogo, compactar
 from .compactar import DIAS_POR_HORA, SERIE
 
 
@@ -299,10 +299,12 @@ def exportar(cfg):
         _gravar(destino / f"tooltips-{parte}.json",
                 {i: linhas for i, linhas in tooltips.items() if i % PARTES_TOOLTIPS == parte})
     (destino / "tooltips.json").unlink(missing_ok=True)
-    _gravar(destino / "nomes-pt.json", dict(con.execute(
+    termos = catalogo.caminho_termos(cfg)
+    _gravar(destino / "nomes-pt.json", {"itens": dict(con.execute(
         # Item sem tradução vem da API com o nome em inglês entre colchetes; esses ficam de fora.
         "SELECT item_id, nome_pt FROM itens WHERE nome_pt IS NOT NULL AND nome_pt != '' "
-        "AND nome_pt NOT LIKE '[%]' AND nome_pt != nome")))
+        "AND nome_pt NOT LIKE '[%]' AND nome_pt != nome")),
+        **(json.loads(termos.read_text()) if termos.exists() else {})})
     _gravar(destino / "receitas.json", _receitas(con))
     if bonus.caminho(cfg).exists():
         _gravar(destino / "bonus.json", json.loads(bonus.caminho(cfg).read_text()))

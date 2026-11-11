@@ -1,4 +1,5 @@
 import json
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
@@ -80,12 +81,45 @@ def pendentes(con, agora):
     )]
 
 
+DIAS_ENTRE_TERMOS = 7
+
+
+def caminho_termos(cfg):
+    return cfg.banco.parent / "termos-pt.json"
+
+
+def termos_pt(cfg, api_pt):
+    """Nomes em português das categorias de item e das profissões, para a página em português.
+
+    Grava dados/termos-pt.json: {"classes": {id: {"nome", "sub": {id: nome}}}, "profissoes": {id: nome}}.
+    Uma falha só adia: o arquivo antigo continua valendo.
+    """
+    arquivo = caminho_termos(cfg)
+    if arquivo.exists() and time.time() - arquivo.stat().st_mtime < DIAS_ENTRE_TERMOS * 86400:
+        return
+    namespace = FONTES[0].format(r=api_pt.regiao)
+    try:
+        classes = {}
+        for c in (api_pt.get("/data/wow/item-class/index", namespace=namespace).dados or {}).get("item_classes", []):
+            detalhe = api_pt.get(f"/data/wow/item-class/{c['id']}", namespace=namespace).dados or {}
+            classes[c["id"]] = {"nome": c.get("name"), "sub": {
+                s["id"]: s.get("name") for s in detalhe.get("item_subclasses", []) if s.get("name")}}
+        profissoes = {p["id"]: p["name"] for p in (api_pt.get(
+            "/data/wow/profession/index", namespace=namespace).dados or {}).get("professions", []) if p.get("name")}
+    except (ErroAPI, KeyError, TypeError) as e:
+        print(f"catálogo: termos em português adiados ({e})")
+        return
+    if classes:
+        arquivo.write_text(json.dumps({"classes": classes, "profissoes": profissoes}, ensure_ascii=False))
+
+
 def traduzir(cfg, api_pt, reserva_pt=None, limite=None):
     """Busca o nome em português dos itens já cadastrados que ainda não o têm.
 
     `api_pt` é um cliente com idioma pt_BR; `reserva_pt(item_id)` devolve o nome para os
     itens que vieram de fora da API da Blizzard. Só o nome: o resto do cadastro fica em inglês.
     """
+    termos_pt(cfg, api_pt)
     con = banco.abrir(cfg.banco)
     faltam = con.execute("SELECT item_id, fonte FROM itens WHERE fonte IS NOT NULL AND nome_pt IS NULL "
                          "ORDER BY 1").fetchall()[:limite]

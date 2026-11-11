@@ -33,7 +33,12 @@ header { display: contents; }
   padding: 7px 70px 6px; border-radius: 5px 5px 0 0; border-bottom: 1px solid #000;
   background: linear-gradient(#3a3a3a, #262626 55%, #1c1c1c);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 -1px 0 #4a4a4a; }
-h1 { margin: 0; font: 15px var(--titulo); color: var(--ouro); letter-spacing: .4px; text-shadow: 0 1px 0 #000; }
+h1 { margin: 0; font: 700 22px var(--titulo); letter-spacing: 1.5px; font-variant: small-caps; line-height: 1.15;
+  color: var(--ouro); background: linear-gradient(#fff6b8 8%, #ffd100 45%, #b07a00 92%); -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; filter: drop-shadow(0 1px 0 #000) drop-shadow(0 0 6px rgba(255, 190, 0, .25)); }
+h1::first-letter { font-size: 1.25em; }
+.lema { flex: none; margin: 0; padding: 4px 12px 5px 96px; text-align: center; font: italic 12px var(--titulo); color: #c9b88a;
+  background: linear-gradient(#1f1f1f, #171717); border-bottom: 1px solid #000; box-shadow: inset 0 -1px 0 var(--metal-escuro); }
 .barra-titulo .sub { font: 12px var(--titulo); color: var(--fraco); }
 /* Medalhão no canto, onde o jogo põe o retrato do personagem. */
 .emblema { position: absolute; z-index: 2; left: -12px; top: -16px; width: 62px; height: 62px; border-radius: 50%;
@@ -128,8 +133,14 @@ tr.item:nth-of-type(even) { background: var(--zebra); }
 tr.item:hover { background: linear-gradient(90deg, rgba(255, 209, 0, .22), rgba(255, 209, 0, .07)); }
 tr.item.abre { cursor: pointer; }
 tr.item[aria-expanded=true] { background: linear-gradient(90deg, #8a7118, #4d3f0d 55%, #2a230a); }
-td.nome { white-space: normal; display: flex; align-items: center; gap: 8px; }
-td.nome img, .semicone { width: 24px; height: 24px; flex: none; background: #000; border: 1px solid #000; border-radius: 3px;
+/* A célula do nome é a que estica: as outras colunas ficam do tamanho do que mostram.
+   Ela continua sendo célula de tabela (com display:flex as larguras das colunas saíam erradas). */
+td.nome { position: relative; white-space: normal; width: 100%; min-width: 210px; }
+.cartao td.nome, .reagentes td.nome { min-width: 0; }
+th.num, td.num { width: 1%; }
+td.nome > span:not(.semicone) { display: block; overflow: hidden; padding-top: 3px; min-height: 26px; }
+td.nome:has(.fav) { padding-right: 38px; }
+td.nome img, .semicone { float: left; margin-right: 8px; width: 24px; height: 24px; background: #000; border: 1px solid #000; border-radius: 3px;
   box-shadow: 0 0 0 1px #6b6b6b; }
 .variantes { font: 11px Arial, sans-serif; color: var(--fraco); }
 td.nome .variantes { margin-left: 8px; }
@@ -165,6 +176,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
 .atributos { max-width: 320px; margin-bottom: 10px; font-size: 13px; color: #fff; }
 .atributos .par, #dica .par { display: flex; justify-content: space-between; gap: 24px; color: inherit; }
 .reagentes { min-width: 0; width: auto; margin-bottom: 10px; }
+.reagentes td.nome { width: auto; }
 .reagentes td { padding: 2px 16px 2px 0; background: none !important; box-shadow: none !important; font-size: 13px; color: var(--texto); }
 .reagentes td.nome img, .reagentes .semicone { width: 20px; height: 20px; }
 .reagentes .fonte { color: var(--fraco); font-family: Arial, sans-serif; }
@@ -176,7 +188,8 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
 .chips { flex: none; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 12px 0; font-size: 12px; color: var(--fraco); }
 .chips button { font: 12px Arial, sans-serif; color: var(--fraco); background: #1c1c1c; border: 1px solid #000; border-radius: 12px; padding: 3px 10px; cursor: pointer; }
 .chips button.ativo { color: #fff; background: #6a560f; }
-.fav { margin-left: auto; background: none; border: 0; color: #4a4a4a; cursor: pointer; font-size: 16px; line-height: 1; padding: 0 6px; }
+td.nome .fav { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); }
+.fav { background: none; border: 0; color: #4a4a4a; cursor: pointer; font-size: 16px; line-height: 1; padding: 0 6px; }
 .fav.ativo { color: #ffd100; }
 .fav.mais { font-size: 18px; color: #8a8a8a; } .fav.mais.ativo { color: #4be04b; }
 .comparar { max-width: 800px; margin-top: 10px; }
@@ -243,7 +256,8 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
   /* A escolha da casa sobe para a barra de título (o script a muda de lugar), para as cinco abas caberem. */
   .barra-titulo label { margin-left: auto; font-size: 0; min-width: 0; }
   .barra-titulo select { max-width: 100%; min-width: 0; width: 124px; font-size: 14px; padding: 7px 4px; }
-  .barra-titulo .sub { display: none; }
+  h1 { font-size: 19px; letter-spacing: 1px; }
+  .lema { padding: 4px 10px 5px; font-size: 11.5px; }
   #idioma { position: static; margin-left: auto; padding: 8px 10px; font-size: 12px; }
   .barra-titulo label { margin-left: 0; }
   #atualizado { display: none; }
@@ -273,7 +287,8 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
   thead th { position: static; padding: 6px 6px; }
   td { padding: 8px 6px; white-space: normal; }
   td.num { white-space: nowrap; }
-  td.nome { gap: 7px; }
+  td.nome { min-width: 0; }
+  td.nome > span:not(.semicone) { padding-top: 0; min-height: 32px; }
   td.nome .variantes { display: block; margin-left: 0; }
   td.nome img, .semicone { width: 30px; height: 30px; }
   tr.detalhe td { padding: 10px 8px 12px; }
@@ -287,7 +302,8 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
   #rodape button { padding: 10px 16px; }
   .cartoes { grid-template-columns: minmax(0, 1fr); padding: 6px; }
   /* Alvos de toque: nada clicável com menos de uns 36 px de altura. */
-  .fav { font-size: 20px; padding: 10px 8px; margin-right: -6px; }
+  .fav { font-size: 20px; padding: 10px 8px; }
+  td.nome .fav { right: 0; }
   input[type=checkbox] { width: 22px; height: 22px; }
   .periodos button { padding: 8px 12px; }
   .chips { gap: 8px; }
@@ -306,9 +322,10 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
   <div class="barra-titulo">
     <span class="emblema"><img alt="World of Warcraft: Forever" onload="this.parentElement.classList.add('com-logo')" onerror="this.remove()"
       src="https://blz-contentstack-images.akamaized.net/v3/assets/blt9c12f249ac15c7ec/blt527dd61848a757c7/6aa3316cad92093ee45628fd/camelot-logo-gamepage.png?width=220"></span>
-    <h1>Goblinomics</h1><span class="sub">WoW Forever</span>
-    <button type="button" id="idioma" title="Troca o idioma dos nomes dos itens. O resto (tooltips, categorias) fica em inglês.">PT</button>
+    <h1>Goblinomics</h1>
+    <button type="button" id="idioma" data-nt title="Switch to English / Mudar para português">EN</button>
   </div>
+  <p class="lema">Preços, lucro e oportunidades da casa de leilões do WoW: Forever, atualizados a cada hora.</p>
   <div class="barra-abas">
     <nav id="abas" aria-label="Seções">
       <button type="button" data-modo="leiloes" class="ativo">Leilões</button>
@@ -508,6 +525,9 @@ const ORDEM_CLASSES = [2, 4, 1, 0, 7, 6, 11, 9, 5, 15, 12, 13];
 const SLOTS = {HEAD: "Head", NECK: "Neck", SHOULDER: "Shoulder", BODY: "Shirt", CHEST: "Chest", WAIST: "Waist",
   LEGS: "Legs", FEET: "Feet", WRIST: "Wrist", HAND: "Hands", FINGER: "Finger", TRINKET: "Trinket", CLOAK: "Back",
   HOLDABLE: "Held In Off-hand", SHIELD: "Shield", TABARD: "Tabard"};
+const SLOTS_PT = {HEAD: "Cabeça", NECK: "Pescoço", SHOULDER: "Ombros", BODY: "Camisa", CHEST: "Torso", WAIST: "Cintura",
+  LEGS: "Pernas", FEET: "Pés", WRIST: "Pulsos", HAND: "Mãos", FINGER: "Dedo", TRINKET: "Berloque", CLOAK: "Costas",
+  HOLDABLE: "Mão secundária", SHIELD: "Escudo", TABARD: "Tabardo"};
 const ARMADURA = 4, ARMAS = 2;
 // Subcategorias de armas com o nome e na ordem da casa de leilões do jogo; a API chama as de uma e de duas mãos pelo mesmo nome.
 const NOMES_ARMAS = {0: "One-Handed Axes", 4: "One-Handed Maces", 7: "One-Handed Swords", 15: "Daggers", 13: "Fist Weapons",
@@ -520,8 +540,198 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", 
 
 let meta, catalogo, bonusJogo, grupos = [], filtrados = [];
 // Preferências de quem usa, guardadas só neste navegador.
-const prefs = {profissoes: [], favoritos: [], lista: {}, habilidade: {}, modo: null, casa: null, carteira: [], idioma: "en", casaPadrao: null};
+const prefs = {profissoes: [], favoritos: [], lista: {}, habilidade: {}, modo: null, casa: null, carteira: [], lingua: null, casaPadrao: null};
 try { Object.assign(prefs, JSON.parse(localStorage.getItem("ah-forever") || "{}")); } catch {}
+// Idioma da interface e dos nomes: o escolhido no botão ou, na primeira visita, o do navegador.
+const LINGUA = prefs.lingua || ((navigator.language || "pt").toLowerCase().startsWith("pt") ? "pt" : "en");
+const EN = LINGUA === "en", LOC = EN ? "en-US" : "pt-BR";
+document.documentElement.lang = EN ? "en" : "pt-BR";
+// ---- Interface em inglês ----
+// O código escreve tudo em português. Com a página em inglês, cada texto que entra na tela passa por
+// aqui: primeiro a tabela de textos inteiros, depois as frases e os padrões (trechos com números ou nomes).
+// Nomes de itens, tooltips e termos do jogo não passam: já chegam no idioma certo.
+const TEXTOS_EN = {
+  "Seções": "Sections", "Leilões": "Auctions", "Profissões": "Professions", "Resumo": "Summary", "Ofertas": "Deals",
+  "Entre casas": "Across houses", "Casas": "Houses", "Lista": "List", "Casa": "House", "Categorias": "Categories",
+  "Nome": "Name", "Buscar item": "Search item", "Favoritos": "Favorites", "só eles": "only these", "Filtros": "Filters",
+  "Nível requerido": "Required level", "mín": "min", "máx": "max", "Nível do item": "Item level",
+  "Raridade mínima": "Minimum rarity", "Todas": "All", "Comum": "Common", "Incomum": "Uncommon", "Raro": "Rare", "Épico": "Epic",
+  "Atributo ou sufixo": "Stat or suffix", "ex.: of the Monkey": "e.g. of the Monkey", "Preço máx. (ouro)": "Max price (gold)",
+  "Limpar": "Clear", "Preço (un.)": "Price (each)", "Nível": "Level", "Disponível": "Available", "7 dias": "7 days",
+  "Vendas/dia": "Sales/day", "Mercado (un.)": "Market (each)", "Carregando…": "Loading…", "Anterior": "Previous", "Próxima": "Next",
+  "Receita": "Recipe", "Buscar receita": "Search recipe", "Lucro mínimo (ouro)": "Min profit (gold)", "Mín. à venda": "Min listed",
+  "Materiais intermediários": "Intermediate materials", "fabricar se compensar": "craft when cheaper",
+  "Sem preço completo": "Missing prices", "mostrar": "show", "Minha habilidade": "My skill", "Subir habilidade": "Skill up",
+  "só as que dão ponto": "only ones that give points", "Materiais brutos": "Raw materials", "Menor preço (un.)": "Lowest price (each)",
+  "Lucro (un., −taxa)": "Profit (each, −cut)", "NPC paga": "Vendor pays", "À venda": "Listed", "Lucro/dia": "Profit/day",
+  "Receitas": "Recipes", "Categoria": "Category", "Materiais": "Materials", "Venda (−taxa)": "Sale (−cut)", "Lucro": "Profit",
+  "Margem": "Margin", "Vale fabricar": "Worth crafting", "O que fazer agora": "What to do now", "Por profissão": "By profession",
+  "Tipo": "Type", "Abaixo da média de 7 dias": "Below the 7-day average", "Abaixo do que o NPC paga": "Below what vendors pay",
+  "Desconto mínimo (%)": "Min discount (%)", "Giro": "Turnover", "só o que vende": "only what sells",
+  "Margem mínima (%)": "Min margin (%)", "Rota": "Route", "Com a casa neutra": "With the neutral house",
+  "Entre Aliança e Horda": "Between Alliance and Horde", "Destino": "Destination", "só o que vende lá": "only what sells there",
+  "Comprar em": "Buy at", "Preço": "Price", "Vender em": "Sell at", "Preço lá": "Price there", "Lucro (un.)": "Profit (each)",
+  "Vendas/dia lá": "Sales/day there", "Lista de compras": "Shopping list", "Fabricar": "Craft", "O que comprar": "What to buy",
+  "Copiar lista": "Copy list", "Esvaziar": "Empty list", "Quantidade": "Quantity", "Onde": "Where", "Carteira": "Portfolio",
+  "Tenho": "Own", "Paguei (un.)": "Paid (each)", "Agora (un.)": "Now (each)", "Se vender agora": "If sold now",
+  "Histórico": "History", "Tudo": "All", "Menor preço por unidade": "Lowest price per unit", "Quantidade à venda": "Quantity listed",
+  "só lance": "bid only", "Todos": "All", "Sem cadastro": "Unknown items", "Copiar link": "Copy link",
+  "Pôr na carteira": "Add to portfolio", "Na carteira ✓": "In portfolio ✓", "Link copiado": "Link copied", "Copiada": "Copied",
+  "Não deu para copiar": "Could not copy", "Comparar com as outras casas": "Compare with the other houses",
+  "Menor preço": "Lowest price", "Mercado": "Market", "Média 7 dias": "7-day average", "Desconto": "Discount",
+  "Revenda (un.)": "Resale (each)", "Unidades": "Units", "Lucro total": "Total profit", "Vender ao NPC": "Sell to vendor",
+  "Pechincha": "Bargain", "Outra casa": "Other house", "laranja": "orange", "amarela": "yellow", "verde": "green", "cinza": "grey",
+  "leilão": "auction", "NPC": "vendor", "sem anúncio": "not listed", "Preferência": "Preference", "Sem uso": "Unused",
+  "Favorito": "Favorite", "Tirar da lista": "Remove from list", "Tirar da carteira": "Remove from portfolio",
+  "Pôr na lista de compras": "Add to shopping list", "Tirar da lista de compras": "Remove from shopping list",
+  "Quantas vezes fabricar": "How many crafts", "Quantidade comprada": "Quantity bought",
+  "Preço pago por unidade, em ouro": "Price paid per unit, in gold", "Gráfico": "Chart", "Vendas estimadas": "Estimated sales",
+  "ouro": "gold", "prata": "silver", "cobre": "copper", "Addon para o jogo": "In-game addon", "fabricar": "craft", "coletar": "gather",
+  "paguei": "paid", "agora": "now", "Comprei": "Bought", "por": "for", "de ouro cada": "gold each", "Minhas profissões:": "My professions:",
+  "Nas outras casas": "In the other houses", "Vendas estimadas por coleta": "Estimated sales per snapshot",
+  "Vendas estimadas por dia": "Estimated sales per day", "Receitas com lucro agora": "Recipes profitable right now",
+  "Materiais (grupo)": "Materials", "Vendas estimadas por dia, comparando uma coleta com a seguinte": "Estimated sales per day, from comparing each snapshot with the next",
+  "Unidades à venda nesta casa": "Units listed in this house", "Preço de agora contra a média de 7 dias": "Current price against the 7-day average",
+  "Quanto um vendedor NPC paga pela unidade": "What a vendor pays per unit", "Lucro por unidade vezes as vendas por dia": "Profit per unit times sales per day",
+  "Vendas estimadas do item pronto por dia": "Estimated daily sales of the crafted item",
+  "Lucro por fabricação vezes o que o mercado absorve por dia": "Profit per craft times what the market absorbs per day",
+  "Pelo menos uma venda estimada por dia nesta casa": "At least one estimated sale per day in this house",
+  "Unidades à venda na casa de origem": "Units listed in the origin house", "Vendas estimadas por dia na casa de destino": "Estimated sales per day in the destination house",
+  "Preço lá, menos a taxa de lá, menos o preço de compra": "Price there, minus the cut there, minus the purchase price",
+  "Unidades à venda abaixo do preço de NPC": "Units listed below the vendor price",
+  "NPC paga menos o que você gasta, somando todas as unidades": "What the vendor pays minus what you spend, over all units",
+  "Média menos a taxa da casa, menos o preço de agora": "Average minus the house cut, minus the current price",
+};
+const FRASES_EN = [
+  ["Preços, lucro e oportunidades da casa de leilões do WoW: Forever, atualizados a cada hora.", "Prices, profit and opportunities from the WoW: Forever auction house, updated every hour."],
+  ["Site de fã, sem vínculo com a Blizzard Entertainment. World of Warcraft e o logo são marcas da Blizzard.", "Fan site, not affiliated with Blizzard Entertainment. World of Warcraft and the logo are trademarks of Blizzard."],
+  ["site de fã, sem vínculo com a Blizzard", "fan site, not affiliated with Blizzard"],
+  ["Material coletado não tem custo de fabricação: o lucro é o menor preço do leilão menos a taxa da casa (5%; 15% na neutra). Quando o NPC paga mais do que isso, o valor aparece em vermelho e vale mais vender ao NPC.",
+   "Gathered materials have no crafting cost: profit is the lowest auction price minus the house cut (5%; 15% at the neutral house). When a vendor pays more than that, the value shows in red and selling to the vendor is better."],
+  ["Lucro potencial com os anúncios de agora: venda pelo menor preço, menos a taxa da casa de leilões (5%; 15% na neutra), menos os materiais ao preço de mercado (ou de NPC, quando mais barato). Anúncio não é venda: olhe a quantidade à venda e o histórico antes de fabricar.",
+   "Potential profit from current listings: sale at the lowest price, minus the auction house cut (5%; 15% at the neutral house), minus materials at market price (or vendor price when cheaper). A listing is not a sale: check the quantity listed and the history before crafting."],
+  ["O que rende mais agora nesta casa, somando fabricar, vender ao NPC, pechinchas e revenda em outra casa do mercado. O lucro é o total da quantidade indicada, limitada ao que o mercado vende num dia. É estimativa: confira antes de gastar.",
+   "What pays best right now in this house, combining crafting, selling to vendors, bargains and resale in another house of the same ruleset. Profit is the total for the quantity shown, capped at what the market sells in a day. It is an estimate: check before you spend."],
+  ["Itens anunciados por menos do que um vendedor NPC paga: comprar e vender ao NPC dá lucro na hora. O preço de NPC vem do cadastro do item e não foi conferido um a um no Forever: confira no tooltip do jogo antes de comprar muito.",
+   "Items listed for less than a vendor pays: buying and selling to the vendor is instant profit. Vendor prices come from the item database and were not checked one by one in Forever: check the in-game tooltip before buying a lot."],
+  ["Itens cujo menor preço de agora está abaixo da média dos menores preços dos últimos 7 dias nesta casa.", "Items whose current lowest price is below the average of the lowest prices over the last 7 days in this house."],
+  ["Um preço baixo pode ser só o mercado caindo: abra o item na aba Leilões e veja o histórico. A média só existe depois de 6 coletas.", "A low price may just be the market falling: open the item in the Auctions tab and check its history. The average only exists after 6 snapshots."],
+  ["Compra pelo preço de mercado da origem; venda pelo menor anúncio do destino ou, se for menor, pelo preço médio a que o item tem vendido lá, menos a taxa de lá (5%; 15% na neutra).",
+   "Buys at the origin's market price; sells at the destination's lowest listing or, if lower, at the average price the item has been selling for there, minus the cut there (5%; 15% at the neutral house)."],
+  ["Só itens sem variantes. Cada ruleset tem três casas (Aliança, Horda, neutra).", "Only items without variants. Each ruleset has three houses (Alliance, Horde, neutral)."],
+  ["As vendas são estimadas pelos anúncios que somem entre coletas, então podem incluir cancelamentos.", "Sales are estimated from listings that disappear between snapshots, so they may include cancellations."],
+  ["Ranking por lucro de uma unidade, calculado sobre os anúncios de agora: um único anúncio caro pode pôr um item no topo.", "Ranked by profit on one unit, from current listings: a single expensive listing can put an item on top."],
+  ["o ranking passa a ser por lucro por dia.", "the ranking switches to profit per day."],
+  ["(marque as suas para ver só elas e fabricar materiais só com elas)", "(pick yours to see only them and to craft materials only with them)"],
+  ["o total de cada material é o custo de comprar essa quantidade agora, do anúncio mais barato ao mais caro.", "each material's total is the cost of buying that quantity now, from the cheapest listing to the most expensive."],
+  ["Fabricar no caminho, por sair mais barato que comprar:", "Craft along the way, as it is cheaper than buying:"],
+  ["A lista está vazia. Na aba Profissões, toque no ＋ ao lado de uma receita.", "The list is empty. In the Professions tab, tap the ＋ next to a recipe."],
+  ["A carteira está vazia. Na aba Leilões, abra um item e use \"Pôr na carteira\" para registrar o que comprou.", "The portfolio is empty. In the Auctions tab, open an item and use \"Add to portfolio\" to record what you bought."],
+  ["Registre o que comprou para revender e acompanhe quanto vale. Fica guardada só neste navegador.", "Record what you bought to resell and track what it is worth. It is stored only in this browser."],
+  ["Fica guardada só neste navegador.", "It is stored only in this browser."],
+  ["Para mais do que isso não há material à venda.", "There is not enough material listed for more than that."],
+  ["Depois disso o material encarece e o lucro total para de crescer.", "Beyond that, materials get pricier and total profit stops growing."],
+  ["Nada com lucro nos anúncios de agora.", "Nothing profitable in the current listings."],
+  ["Nenhum item com esses filtros.", "No items match these filters."], ["Nenhuma receita com esses filtros.", "No recipes match these filters."],
+  ["Nenhuma oferta com esses filtros.", "No deals match these filters."], ["Nenhuma oportunidade com esses filtros.", "No opportunities match these filters."],
+  ["Nenhuma venda observada no período.", "No sales observed in this period."], ["Sem preço de arremate no período.", "No buyout price in this period."],
+  ["Ainda sem histórico para este item.", "No history for this item yet."], ["Histórico indisponível:", "History unavailable:"],
+  ["Não foi possível carregar os dados:", "Could not load the data:"],
+  ["a Blizzard ainda não publicou preços novos", "Blizzard has not published new prices yet"], ["a coleta pode ter parado.", "collection may have stopped."],
+  ["(menor preço entre todas as variantes)", "(lowest price across all variants)"],
+  ["(por dia nos resumos, por coleta nos dias recentes)", "(per day in summaries, per snapshot on recent days)"],
+  ["Procura no sufixo e nos atributos das variantes e no texto do tooltip. Ex.: monkey, stamina, fire resistance", "Searches variant suffixes and stats and the tooltip text. E.g.: monkey, stamina, fire resistance"],
+  ["Menor preço de agora contra a média dos menores preços dos últimos 7 dias. Verde: mais barato que a média", "Current lowest price against the average of the lowest prices over the last 7 days. Green: cheaper than average"],
+  ["Usa o custo de fabricar o material (barras, tecidos, peças) quando sai mais barato que comprar", "Uses the cost of crafting the material (bars, cloth, parts) when that is cheaper than buying"],
+  ["Sua habilidade nesta profissão. A receita ganha a cor do jogo: laranja sempre dá ponto, amarela quase sempre, verde raramente, cinza nunca. O jogo não informa em que nível cada receita é aprendida, então uma laranja pode ainda não estar ao seu alcance.",
+   "Your skill in this profession. Recipes get the in-game colour: orange always gives a point, yellow almost always, green rarely, grey never. The game does not say at which level each recipe is learned, so an orange one may still be out of reach."],
+  ["Menor preço menos a taxa da casa de leilões (5%; 15% na neutra)", "Lowest price minus the auction house cut (5%; 15% at the neutral house)"],
+  ["Quantas vezes vale fabricar de uma tacada: além disso o material encarece (ou acaba) e o lucro total para de crescer", "How many crafts are worth doing in one go: beyond that materials get pricier (or run out) and total profit stops growing"],
+  ["Com vendas observadas no destino, exige pelo menos uma por dia; sem elas, pelo menos dois anúncios lá", "With observed sales at the destination, requires at least one per day; without them, at least two listings there"],
+  ["O menor anúncio do destino ou, se for menor, o preço médio a que o item tem vendido lá", "The destination's lowest listing or, if lower, the average price the item has been selling for there"],
+  ["Menor preço de agora menos a taxa da casa, menos o que você pagou, vezes a quantidade", "Current lowest price minus the house cut, minus what you paid, times the quantity"],
+  ["Copia um endereço que abre a página direto neste item", "Copies an address that opens the page straight on this item"],
+  ["Mostra estes preços no tooltip dos itens dentro do jogo. Extraia em Interface/AddOns.", "Shows these prices in item tooltips in game. Extract into Interface/AddOns."],
+];
+const NUM = "([\\d.,]+)";
+const PADROES_EN = [
+  [new RegExp(`Ranking por lucro por dia: lucro de cada unidade vezes as vendas estimadas por dia \\(${NUM} h de observação\\)\\.`), "Ranked by profit per day: profit on each unit times estimated sales per day ($1 h observed)."],
+  [new RegExp(`Com ${NUM} h de vendas observadas \\(há ${NUM} h\\),`), "With $1 h of observed sales ($2 h so far),"],
+  [new RegExp(`Revenda: o que sobra por unidade vendendo pela média, já sem a taxa da casa \\(${NUM}%\\)\\.`), "Resale: what is left per unit selling at the average, after the house cut ($1%)."],
+  [/Compra em (.+?) para revender nas outras casas do mesmo ruleset \((.+?)\), e o caminho inverso\./, "Buys at $1 to resell in the other houses of the same ruleset ($2), and the other way round."],
+  [/A coleta parou: a última checagem foi (.+?)\. Os preços são de (.+?)\./, "Collection has stopped: the last check was $1. Prices are from $2."],
+  [new RegExp(`Os preços estão com ${NUM} h de atraso:`), "Prices are $1 h old:"],
+  [new RegExp(`\\(a coleta checou há ${NUM} min\\)`), "(last checked $1 min ago)"],
+  [/Dados coletados/, "Data collected"],
+  [new RegExp(`há ${NUM} dias`, "g"), "$1 days ago"], [new RegExp(`há ${NUM} (min|h)`, "g"), "$1 $2 ago"],
+  [new RegExp(`${NUM}–${NUM} de ${NUM} itens`), "$1–$2 of $3 items"],
+  [new RegExp(`${NUM} variantes`), "$1 variants"], [/Variante /, "Variant "], [/\(sem sufixo\)/, "(no suffix)"],
+  [new RegExp(`Nível ${NUM}`), "Level $1"], [new RegExp(`requer ${NUM}`), "requires $1"],
+  [new RegExp(`vende ~${NUM}/dia lá`), "sells ~$1/day there"], [new RegExp(`vende ~${NUM}/dia`), "sells ~$1/day"], [new RegExp(`~${NUM}/dia`), "~$1/day"],
+  [/ na semana/, " this week"], [new RegExp(`${NUM} no período`), "$1 in this period"], [/\(resumo do dia\)/, "(daily summary)"],
+  [new RegExp(`vendeu ~${NUM}`), "sold ~$1"], [new RegExp(`${NUM} un\\.`), "$1 units"],
+  [new RegExp(`faz ${NUM} por vez`), "makes $1 per craft"],
+  [/Só dá para fabricar uma vez a cada /, "Can only be crafted once every "], [/recarga /, "cooldown "],
+  [new RegExp(`${NUM} dias`), "$1 days"],
+  [new RegExp(`Fica amarela com ${NUM} de habilidade e cinza com ${NUM}`), "Turns yellow at $1 skill and grey at $2"],
+  [new RegExp(`Dá ponto de habilidade até ${NUM} \\(amarela a partir de ${NUM}\\)`), "Gives skill points up to $1 (yellow from $2)"],
+  [new RegExp(`margem ${NUM}%`), "margin $1%"], [new RegExp(`^até ${NUM}$`), "up to $1"],
+  [/Materiais sem preço completo/, "Materials missing prices"], [/venda líquida/, "net sale"], [/lucro\/dia/, "profit/day"],
+  [/Vale fabricar até/, "Worth crafting up to"], [/de uma vez: lucro total/, "at once: total profit"],
+  [new RegExp(`O mercado vende só ~${NUM} por dia\\.`), "The market only sells ~$1 per day."],
+  [/fabricar \((.+?)\)/, "craft ($1)"], [/fabricar · /, "craft · "],
+  [/Ver tudo de /, "See all of "], [new RegExp(`comprar ${NUM}`), "buy $1"], [new RegExp(`levar ${NUM} para `), "take $1 to "],
+  [new RegExp(`só ${NUM} à venda`), "only $1 listed"], [new RegExp(`${NUM} à venda`), "$1 listed"], [/^média$/, "average"], [/^· média$/, "· average"],
+  [/ cada(?= ·|$)/, " each"], [/leilão · /, "auction · "], [/NPC · /, "vendor · "],
+  [/^(.+) por$/, "$1 for"], [/^· lucro$/, "· profit"], [/· resultado$/, "· result"], [/· agora$/, "· now"],
+  [/· preços de (.+?);/, "· prices from $1;"], [/vendendo tudo agora em (.+?), já sem a taxa:/, "selling everything now at $1, after the cut:"],
+  [/^Paguei$/, "Paid"], [/★ Abrir sempre em /, "★ Always open at "], [/★ padrão/, "★ default"],
+  [/\bHorda\b/g, "Horde"], [/Aliança/g, "Alliance"], [/\bNeutra\b/g, "Neutral"],
+];
+FRASES_EN.sort((a, b) => b[0].length - a[0].length);
+function emIngles(texto) {
+  const junto = texto.replace(/\s+/g, " "), limpo = junto.trim();
+  if (!limpo || !/[A-Za-zÀ-ú]/.test(limpo)) return texto;
+  // Os espaços das pontas ficam como estavam; a tradução trabalha só no miolo.
+  const [antes, depois] = junto.split(limpo);
+  let saida = TEXTOS_EN[limpo];
+  if (saida == null) {
+    saida = limpo;
+    for (const [pt, en] of FRASES_EN) if (saida.includes(pt)) saida = saida.split(pt).join(en);
+    for (const [padrao, en] of PADROES_EN) saida = saida.replace(padrao, en);
+  }
+  return antes + saida + (depois ?? "");
+}
+// Fora da tradução: nomes de itens (classes q-*), tooltips, atributos calculados e o que estiver marcado com data-nt.
+const FORA_DA_TRADUCAO = '[data-nt], #dica, .atributos, .vnome .variantes, script, style, [class*="q-"]:not(.q-null)';
+const ATRIBUTOS_TRADUZIDOS = ["title", "placeholder", "aria-label", "label"];
+function traduzir(raiz) {
+  if (raiz.nodeType === Node.TEXT_NODE) {
+    if (raiz.parentElement?.closest(FORA_DA_TRADUCAO)) return;
+    const novo = emIngles(raiz.nodeValue);
+    if (novo !== raiz.nodeValue) raiz.nodeValue = novo;
+    return;
+  }
+  if (raiz.nodeType !== Node.ELEMENT_NODE || raiz.closest(FORA_DA_TRADUCAO)) return;
+  for (const el of [raiz, ...raiz.querySelectorAll("[title], [placeholder], [aria-label], optgroup[label]")])
+    for (const atributo of ATRIBUTOS_TRADUZIDOS) {
+      const valor = el.getAttribute(atributo);
+      if (valor && !el.closest(FORA_DA_TRADUCAO)) { const novo = emIngles(valor); if (novo !== valor) el.setAttribute(atributo, novo); }
+    }
+  const caminhada = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT);
+  for (let no = caminhada.nextNode(); no; no = caminhada.nextNode()) traduzir(no);
+}
+if (EN) {
+  traduzir(document.body);
+  new MutationObserver(mudancas => {
+    for (const m of mudancas) {
+      if (m.type === "childList") m.addedNodes.forEach(traduzir);
+      else if (m.type === "characterData") traduzir(m.target);
+      else { const valor = m.target.getAttribute(m.attributeName), novo = valor && emIngles(valor); if (novo && novo !== valor) m.target.setAttribute(m.attributeName, novo); }
+    }
+  }).observe(document.body, {childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATRIBUTOS_TRADUZIDOS});
+}
+
 const guardarPrefs = () => { try { localStorage.setItem("ah-forever", JSON.stringify(prefs)); } catch {} };
 const alternar = (lista, id) => { const i = lista.indexOf(id); i < 0 ? lista.push(id) : lista.splice(i, 1); guardarPrefs(); };
 let casaAtual, vendasCasa = {horas: 0, itens: {}};
@@ -529,7 +739,7 @@ let casaAtual, vendasCasa = {horas: 0, itens: {}};
 const HORAS_PARA_MOSTRAR = 2, HORAS_PARA_RANQUEAR = 6, HORAS_DE_ATRASO = 2, HORAS_DE_PANE = 4;
 // A coleta roda a cada 20 minutos; passando disto sem carimbo novo, parou.
 const MINUTOS_SEM_CHECAR = 70;
-const porDia = v => v == null ? "–" : v >= 10 ? Math.round(v).toLocaleString("pt-BR") : v.toLocaleString("pt-BR", {maximumFractionDigits: 1});
+const porDia = v => v == null ? "–" : v >= 10 ? Math.round(v).toLocaleString(LOC) : v.toLocaleString(LOC, {maximumFractionDigits: 1});
 const estado = {classe: null, sub: null, slot: null, ordem: "nome", sentido: 1, pagina: 0, abertos: new Set(), comparar: new Set(), periodo: "7d", modo: "leiloes"};
 
 async function json(caminho) {
@@ -548,14 +758,14 @@ function moeda(cobre) {
   if (cobre == null) return '<span class="q-null">só lance</span>';
   const g = Math.floor(cobre / 10000), s = Math.floor(cobre / 100) % 100, c = cobre % 100;
   let h = "";
-  if (g) h += `<span class="g">${g.toLocaleString("pt-BR")}</span>${MOEDAS.g} `;
+  if (g) h += `<span class="g">${g.toLocaleString(LOC)}</span>${MOEDAS.g} `;
   if (g || s) h += `<span class="s">${s}</span>${MOEDAS.s} `;
   return `<span class="moeda">${h}<span class="c">${c}</span>${MOEDAS.c}</span>`;
 }
 
 function moedaTexto(cobre) {
   const g = Math.floor(cobre / 10000), s = Math.floor(cobre / 100) % 100, c = Math.round(cobre % 100);
-  return [g ? g.toLocaleString("pt-BR") + "g" : "", g || s ? s + "s" : "", c + "c"].filter(Boolean).join(" ");
+  return [g ? g.toLocaleString(LOC) + "g" : "", g || s ? s + "s" : "", c + "c"].filter(Boolean).join(" ");
 }
 
 // ---- Histórico de preços ----
@@ -612,7 +822,7 @@ function grafico(pontos, campo, cor, formato) {
   const linha = validos.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)} ${y(p[campo]).toFixed(1)}`).join(" ");
   const bolinhas = validos.length <= 48
     ? validos.map(p => `<circle cx="${x(p.t).toFixed(1)}" cy="${y(p[campo]).toFixed(1)}" r="2.5" fill="${cor}"/>`).join("") : "";
-  const data = t => new Date(t).toLocaleString("pt-BR", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
+  const data = t => new Date(t).toLocaleString(LOC, {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
   const fim = pontos[pontos.length - 1].t;
   return `<svg viewBox="0 0 ${GL} ${GA}" role="img" aria-label="Gráfico">
     <line x1="${GM.e}" x2="${GL - GM.d}" y1="${GA - GM.b}" y2="${GA - GM.b}" stroke="#5a4630"/>
@@ -636,18 +846,18 @@ function barras(pontos) {
   return `<svg viewBox="0 0 ${GL} ${GA}" role="img" aria-label="Vendas estimadas">
     <line x1="${GM.e}" x2="${GL - GM.d}" y1="${base}" y2="${base}" stroke="#5a4630"/>
     <line x1="${GM.e}" x2="${GL - GM.d}" y1="${y(max)}" y2="${y(max)}" stroke="#3a2e21" stroke-dasharray="3 4"/>
-    <text x="${GM.e}" y="${y(max) - 4}">${max.toLocaleString("pt-BR")}</text>
-    <text x="${GL - GM.d}" y="${y(max) - 4}" text-anchor="end">${total.toLocaleString("pt-BR")} no período</text>
+    <text x="${GM.e}" y="${y(max) - 4}">${max.toLocaleString(LOC)}</text>
+    <text x="${GL - GM.d}" y="${y(max) - 4}" text-anchor="end">${total.toLocaleString(LOC)} no período</text>
     ${validos.filter(p => p.vend > 0).map(p => `<rect x="${(Math.min(Math.max(x(p.t) - largura / 2, GM.e), GL - GM.d - largura)).toFixed(1)}" y="${y(p.vend).toFixed(1)}" width="${largura.toFixed(1)}" height="${(base - y(p.vend)).toFixed(1)}" fill="#4be04b" fill-opacity=".8"/>`).join("")}
     <line class="cursor" y1="${GM.t}" y2="${base}" stroke="#e8dcc6" stroke-opacity=".5" visibility="hidden"/>
   </svg>`;
 }
 
 function leitura(p) {
-  const quando = new Date(p.t).toLocaleString("pt-BR", p.diario
+  const quando = new Date(p.t).toLocaleString(LOC, p.diario
     ? {day: "2-digit", month: "2-digit", year: "numeric"}
     : {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
-  return `${quando}${p.diario ? " (resumo do dia)" : ""} · ${moeda(p.min)} · ${p.qtd.toLocaleString("pt-BR")} un.${p.vend ? ` · vendeu ~${p.vend.toLocaleString("pt-BR")}` : ""}`;
+  return `${quando}${p.diario ? " (resumo do dia)" : ""} · ${moeda(p.min)} · ${p.qtd.toLocaleString(LOC)} un.${p.vend ? ` · vendeu ~${p.vend.toLocaleString(LOC)}` : ""}`;
 }
 
 async function desenharHistorico(id) {
@@ -664,7 +874,7 @@ async function desenharHistorico(id) {
       caixa.querySelector(".leitura").innerHTML = leitura(pontos[pontos.length - 1]);
       graficos.innerHTML =
         `<div class="rotulo">Menor preço por unidade</div>${grafico(pontos, "min", "#ffd100", moedaTexto)}
-         <div class="rotulo">Quantidade à venda</div>${grafico(pontos, "qtd", "#6fb7ff", v => v.toLocaleString("pt-BR"))}
+         <div class="rotulo">Quantidade à venda</div>${grafico(pontos, "qtd", "#6fb7ff", v => v.toLocaleString(LOC))}
          ${pontos.some(p => p.vend != null) ? `<div class="rotulo">Vendas estimadas ${pontos.some(p => p.diario) ? "(por dia nos resumos, por coleta nos dias recentes)" : "por coleta"}</div>${barras(pontos)}` : ""}`;
     }
   }
@@ -680,7 +890,7 @@ async function desenharComparacao(id) {
     const vdia = g && vendas.horas >= HORAS_PARA_MOSTRAR ? (vendas.itens[id] || 0) / vendas.horas * 24 : null;
     return `<tr class="${casa === casaAtual ? "aqui" : ""}"><td>${esc(nomeDoMercado(casa))} · ${rotulo(casa)}</td>
       <td class="num">${g ? moeda(g.min) : "–"}</td><td class="num sd">${g ? moeda(g.mercado) : "–"}</td>
-      <td class="num">${g ? g.qtd.toLocaleString("pt-BR") : "–"}</td><td class="num sd">${porDia(vdia)}</td></tr>`;
+      <td class="num">${g ? g.qtd.toLocaleString(LOC) : "–"}</td><td class="num sd">${porDia(vdia)}</td></tr>`;
   }).join("");
   caixa.innerHTML = `<div class="rotulo">Nas outras casas${porItem.get(id)?.variantes.length > 1 ? " (menor preço entre todas as variantes)" : ""}</div>
     <table><thead><tr><th>Casa</th><th class="num">Menor preço</th><th class="num sd">Mercado</th><th class="num">À venda</th><th class="num sd">Vendas/dia</th></tr></thead>
@@ -814,7 +1024,16 @@ const corteDaCasa = () => taxa(casaAtual);
 const nomeDoMercado = casa => casa.mercado || `Mercado ${casa.grupo}`;
 const rotulo = casa => `${faccao(casa.nome)} · ${casa.id}`;
 const faccao = nome => nome.startsWith("Horde") ? "Horda" : nome.startsWith("Alliance") ? "Aliança" : "Neutra";
-let receitas, todasReceitas = [], linhasProf = [];
+let receitas, todasReceitas = [], linhasProf = [], profissoesPt = {};
+// As receitas chegam com os nomes das profissões em inglês; em português valem os da API em pt_BR.
+async function carregarReceitas() {
+  if (!receitas) {
+    const dados = await json("dados/receitas.json");
+    for (const [id, nome] of Object.entries(profissoesPt)) if (dados.profissoes[id]) dados.profissoes[id] = nome;
+    receitas = dados;
+  }
+  return receitas;
+}
 const porItem = new Map();
 const prof = {id: null, ordem: "lucro", sentido: -1, abertos: new Set(), materiaisAbertos: new Set()};
 // Subcategorias de Trade Goods que cada profissão coleta; ids negativos são listas só de materiais.
@@ -841,7 +1060,7 @@ function urlDoIcone(i) {
     ? `https://wow.zamimg.com/images/wow/icons/medium/${esc(i.icone)}.jpg`
     : `https://render.worldofwarcraft.com/${esc(i.fonte)}/icons/56/${esc(i.icone)}.jpg`;
 }
-const pct = v => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(Math.round(v)).toLocaleString("pt-BR") + "%";
+const pct = v => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(Math.round(v)).toLocaleString(LOC) + "%";
 // Preço médio por unidade a que o item vendeu na casa, pelas vendas estimadas; null sem vendas.
 const vendeA = (vendas, id) => vendas.itens[id] > 0 && vendas.valores?.[id] ? Math.round(vendas.valores[id] / vendas.itens[id]) : null;
 // Degraus de preço da casa (custo de comprar n unidades de cada item): arquivo à parte, baixado
@@ -967,7 +1186,7 @@ function calcularReceitas() {
     // Por dia, fabrica-se o que o mercado absorve, limitado pela recarga da receita.
     const horas = recarga(rid), vezes = g && g.vdia != null ? Math.min(g.vdia / feitos, horas ? 24 / horas : Infinity) : null;
     // Com os nomes em português, a receita leva o nome do item que produz.
-    const exibido = prefs.idioma === "pt" && catalogo.itens[item]?.[10] ? catalogo.itens[item][0] : nome;
+    const exibido = !EN && catalogo.itens[item]?.[10] ? catalogo.itens[item][0] : nome;
     return {rid, recarga: horas, profId, categoria: categoria || "", nome: exibido, busca: (exibido + " " + nome).toLowerCase(), item, feitos, partes,
       custo: completo ? custo : null, bruto, lucro, margem: lucro != null && custo > 0 ? lucro / custo * 100 : null,
       qtd: g ? g.qtd : 0, vdia: g ? g.vdia : null,
@@ -986,7 +1205,7 @@ function montarProfissoes() {
   $("categorias").innerHTML = Object.entries(receitas.profissoes).sort((a, b) => a[1].localeCompare(b[1])).map(([id, nome]) =>
     `<button data-prof="${id}" class="${prof.id === +id ? "ativo" : ""}" title="Receitas com lucro agora">${esc(nome)} <small>${lucrativas.get(+id) || 0}</small></button>`).join("")
     + `<div class="grupo">Materiais</div>` + SO_MATERIAIS.map(([id, nome, subs]) =>
-    `<button data-prof="${id}" class="${prof.id === id ? "ativo" : ""}">${nome} <small>${materiaisDe(subs).length}</small></button>`).join("");
+    `<button data-prof="${id}" class="${prof.id === id ? "ativo" : ""}">${esc(catalogo.classes[TRADE_GOODS]?.sub[subs[0]] || nome)} <small>${materiaisDe(subs).length}</small></button>`).join("");
 }
 
 function desenharMateriais() {
@@ -1009,7 +1228,7 @@ function desenharMateriais() {
           <span class="sm">${[g.npc ? `NPC paga ${moeda(g.npc)}` : "", g.vdia != null ? `vende ~${porDia(g.vdia)}/dia` : ""].filter(Boolean).join(" · ")}</span></span></td>
         <td class="num sd">${moeda(g.min)}</td><td class="num sd">${moeda(g.mercado)}</td>
         <td class="num ${npcMelhor ? "neg" : "pos"}">${moedaOuTraco(lucro)}</td><td class="num sd">${moedaOuTraco(g.npc)}</td>
-        <td class="num">${g.qtd.toLocaleString("pt-BR")}</td>
+        <td class="num">${g.qtd.toLocaleString(LOC)}</td>
         <td class="num sd">${porDia(g.vdia)}</td><td class="num sd pos">${moedaOuTraco(lucroDia)}</td></tr>`;
       if (aberto) h += `<tr class="detalhe"><td colspan="8">${histHtml(g.id)}</td></tr>`;
     }
@@ -1047,7 +1266,7 @@ function desenharProf() {
   for (const l of linhasProf) {
     const i = infoItem(l.item), aberto = prof.abertos.has(l.rid), sinal = l.lucro == null ? "" : l.lucro >= 0 ? "pos" : "neg";
     const dif = dificuldade(l.rid, prefs.habilidade[prof.id]), faixa = bonusJogo.dificuldades?.[l.rid];
-    const margem = l.margem == null ? "–" : Math.round(l.margem).toLocaleString("pt-BR") + "%";
+    const margem = l.margem == null ? "–" : Math.round(l.margem).toLocaleString(LOC) + "%";
     h += `<tr class="item abre" data-id="${l.item}" data-rid="${l.rid}" aria-expanded="${aberto}">
       <td class="nome">${iconeHtml(i)}<span><span class="q-${i.qualidade}">${esc(l.nome)}</span>
         ${l.feitos !== 1 ? `<span class="variantes">faz ${l.feitos} por vez</span>` : ""}
@@ -1058,7 +1277,7 @@ function desenharProf() {
       <td class="num sd">${moedaOuTraco(l.custo)}</td><td class="num sd">${moedaOuTraco(l.bruto)}</td>
       <td class="num ${sinal}">${moedaOuTraco(l.lucro)}</td>
       <td class="num sd ${sinal}">${margem}</td>
-      <td class="num">${l.qtd.toLocaleString("pt-BR")}</td>
+      <td class="num">${l.qtd.toLocaleString(LOC)}</td>
       <td class="num sd">${l.ate ? `até ${l.ate}` : "–"}</td>
       <td class="num sd">${porDia(l.vdia)}</td><td class="num sd ${sinal}">${moedaOuTraco(l.lucroDia)}</td></tr>`;
     if (!aberto) continue;
@@ -1095,10 +1314,10 @@ function desenharResumo() {
   // Com observação suficiente, o ranking é pelo que rende por dia; antes disso, pelo lucro de uma unidade.
   const porGiro = vendasCasa.horas >= HORAS_PARA_RANQUEAR;
   $("nota-resumo").textContent = porGiro
-    ? `Ranking por lucro por dia: lucro de cada unidade vezes as vendas estimadas por dia (${vendasCasa.horas.toLocaleString("pt-BR")} h de observação). ` +
+    ? `Ranking por lucro por dia: lucro de cada unidade vezes as vendas estimadas por dia (${vendasCasa.horas.toLocaleString(LOC)} h de observação). ` +
       "As vendas são estimadas pelos anúncios que somem entre coletas, então podem incluir cancelamentos."
     : `Ranking por lucro de uma unidade, calculado sobre os anúncios de agora: um único anúncio caro pode pôr um item no topo. ` +
-      `Com ${HORAS_PARA_RANQUEAR} h de vendas observadas (há ${vendasCasa.horas.toLocaleString("pt-BR")} h), o ranking passa a ser por lucro por dia.`;
+      `Com ${HORAS_PARA_RANQUEAR} h de vendas observadas (há ${vendasCasa.horas.toLocaleString(LOC)} h), o ranking passa a ser por lucro por dia.`;
   const todas = Object.entries(receitas.profissoes).sort((a, b) => a[1].localeCompare(b[1]));
   $("minhas").innerHTML = "Minhas profissões: " + todas.map(([id, nome]) =>
     `<button type="button" data-minha="${id}" class="${prefs.profissoes.includes(+id) ? "ativo" : ""}" aria-pressed="${prefs.profissoes.includes(+id)}">${esc(nome)}</button>`).join("")
@@ -1129,13 +1348,13 @@ function desenharResumo() {
 
 async function abrirResumo() {
   $("resumo").innerHTML = '<div class="vazio">Carregando…</div>';
-  [receitas] = await Promise.all([receitas ?? json("dados/receitas.json"), carregarDegraus()]);
+  [receitas] = await Promise.all([carregarReceitas(), carregarDegraus()]);
   calcularReceitas(); desenharResumo(); desenharAgora();
 }
 
 async function abrirProfissoes() {
   $("aviso-prof").hidden = false; $("aviso-prof").textContent = "Carregando…";
-  [receitas] = await Promise.all([receitas ?? json("dados/receitas.json"), carregarDegraus()]);
+  [receitas] = await Promise.all([carregarReceitas(), carregarDegraus()]);
   prof.id ??= +Object.entries(receitas.profissoes).sort((a, b) => a[1].localeCompare(b[1]))[0][0];
   calcularReceitas(); montarProfissoes(); filtrarProf();
 }
@@ -1156,9 +1375,9 @@ function desenharOfertas() {
       return {g, unidades, lucro};
     }).sort((a, b) => b.lucro - a.lucro).map(({g, unidades, lucro}) => `<tr class="item" data-id="${g.id}">
       <td class="nome">${iconeHtml(g)}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
-        <span class="sm">NPC paga ${moeda(g.npc)} · ${unidades.toLocaleString("pt-BR")} un.</span></span></td>
+        <span class="sm">NPC paga ${moeda(g.npc)} · ${unidades.toLocaleString(LOC)} un.</span></span></td>
       <td class="num">${moeda(g.min)}</td><td class="num sd">${moeda(g.npc)}</td>
-      <td class="num sd">${unidades.toLocaleString("pt-BR")}</td><td class="num pos">${moeda(lucro)}</td></tr>`);
+      <td class="num sd">${unidades.toLocaleString(LOC)}</td><td class="num pos">${moeda(lucro)}</td></tr>`);
   } else {
     $("nota-ofertas").textContent = "Itens cujo menor preço de agora está abaixo da média dos menores preços dos últimos 7 dias nesta casa. " +
       `Revenda: o que sobra por unidade vendendo pela média, já sem a taxa da casa (${Math.round(corte * 100)}%). ` +
@@ -1169,10 +1388,10 @@ function desenharOfertas() {
       (!gira || g.vdia == null || g.vdia >= 1)).map(g => ({g, revenda: Math.round(g.media * (1 - corte)) - g.min}))
       .sort((a, b) => b.revenda - a.revenda).map(({g, revenda}) => `<tr class="item" data-id="${g.id}">
       <td class="nome">${iconeHtml(g)}<span><span class="q-${g.qualidade}">${esc(g.nome)}</span>
-        <span class="sm">média ${moeda(g.media)} · ${g.qtd.toLocaleString("pt-BR")} à venda${g.vdia != null ? ` · vende ~${porDia(g.vdia)}/dia` : ""}</span></span></td>
+        <span class="sm">média ${moeda(g.media)} · ${g.qtd.toLocaleString(LOC)} à venda${g.vdia != null ? ` · vende ~${porDia(g.vdia)}/dia` : ""}</span></span></td>
       <td class="num">${moeda(g.min)}</td><td class="num sd">${moeda(g.media)}</td><td class="num pos">${pct(g.tend)}</td>
       <td class="num sd ${revenda >= 0 ? "pos" : "neg"}">${moedaOuTraco(revenda)}</td>
-      <td class="num sd">${g.qtd.toLocaleString("pt-BR")}</td><td class="num sd">${porDia(g.vdia)}</td></tr>`);
+      <td class="num sd">${g.qtd.toLocaleString(LOC)}</td><td class="num sd">${porDia(g.vdia)}</td></tr>`);
   }
   $("cab-ofertas").innerHTML = cabecalho;
   $("linhas-ofertas").innerHTML = linhas.slice(0, 200).join("");
@@ -1241,17 +1460,17 @@ function desenharAgora(comArbitragem) {
     if (g.min == null) continue;
     if (g.npc && g.min < g.npc) {
       const {unidades, lucro} = melhorCompra(g, g.npc);
-      if (lucro > 0) entradas.push({tipo: "Vender ao NPC", modo: "ofertas", oferta: "npc", id: g.id, nome: g.nome, lucro, detalhe: `comprar ${unidades.toLocaleString("pt-BR")}`});
+      if (lucro > 0) entradas.push({tipo: "Vender ao NPC", modo: "ofertas", oferta: "npc", id: g.id, nome: g.nome, lucro, detalhe: `comprar ${unidades.toLocaleString(LOC)}`});
     }
     if (g.tend != null && g.tend <= -25 && g.vdia >= 1) {
       const {unidades, lucro} = melhorCompra(g, Math.round(g.media * (1 - corte)), Math.ceil(g.vdia));
-      if (lucro > 0) entradas.push({tipo: "Pechincha", modo: "ofertas", oferta: "media", id: g.id, nome: g.nome, lucro, detalhe: `comprar ${unidades.toLocaleString("pt-BR")} · ${pct(g.tend)}`});
+      if (lucro > 0) entradas.push({tipo: "Pechincha", modo: "ofertas", oferta: "media", id: g.id, nome: g.nome, lucro, detalhe: `comprar ${unidades.toLocaleString(LOC)} · ${pct(g.tend)}`});
     }
   }
   if (comArbitragem) for (const l of linhasArb) {
     if (l.origem !== casaAtual || l.margem < 20 || !(l.vdia >= 1)) continue;
     const n = Math.min(l.qtd, Math.ceil(l.vdia));
-    entradas.push({tipo: "Outra casa", modo: "arbitragem", id: l.id, nome: l.g.nome, lucro: l.lucro * n, detalhe: `levar ${n.toLocaleString("pt-BR")} para ${rotulo(l.destino)}`});
+    entradas.push({tipo: "Outra casa", modo: "arbitragem", id: l.id, nome: l.g.nome, lucro: l.lucro * n, detalhe: `levar ${n.toLocaleString(LOC)} para ${rotulo(l.destino)}`});
   }
   entradas.sort((a, b) => b.lucro - a.lucro);
   $("agora").innerHTML = entradas.slice(0, 12).map((e, n) => {
@@ -1274,7 +1493,7 @@ function desenharCarteira() {
     pago += c.pago * c.q; vale += (liquido ?? 0) * c.q;
     return `<tr class="item" data-id="${c.id}"><td class="nome">${iconeHtml(i)}<span><span class="q-${i.qualidade}">${esc(i.nome)}</span>
         <span class="sm">paguei ${moeda(c.pago)} · agora ${g?.min == null ? "sem anúncio" : moeda(g.min)}${g?.tend != null ? ` · ${pct(g.tend)} na semana` : ""}</span></span></td>
-      <td class="num">${c.q.toLocaleString("pt-BR")}</td><td class="num sd">${moeda(c.pago)}</td>
+      <td class="num">${c.q.toLocaleString(LOC)}</td><td class="num sd">${moeda(c.pago)}</td>
       <td class="num sd">${g?.min == null ? "–" : moeda(g.min)}</td>
       <td class="num ${lucro == null ? "" : lucro >= 0 ? "pos" : "neg"}">${moedaOuTraco(lucro)}</td>
       <td class="num sd ${g?.tend == null || Math.abs(g.tend) < 5 ? "" : g.tend > 0 ? "pos" : "neg"}">${pct(g?.tend)}</td>
@@ -1299,8 +1518,8 @@ function filtrarArb() {
       <span class="sm">${rotulo(l.origem)} → ${rotulo(l.destino)} por ${moeda(l.venda)}${l.vdia != null ? ` · vende ~${porDia(l.vdia)}/dia lá` : ""}</span></span></td>
     <td class="sd">${rotulo(l.origem)}</td><td class="num">${moeda(l.compra)}</td>
     <td class="sd">${rotulo(l.destino)}</td><td class="num sd">${moeda(l.venda)}</td>
-    <td class="num pos">${moeda(l.lucro)}</td><td class="num sd">${Math.round(l.margem).toLocaleString("pt-BR")}%</td>
-    <td class="num sd">${l.qtd.toLocaleString("pt-BR")}</td><td class="num sd">${porDia(l.vdia)}</td></tr>`).join("");
+    <td class="num pos">${moeda(l.lucro)}</td><td class="num sd">${Math.round(l.margem).toLocaleString(LOC)}%</td>
+    <td class="num sd">${l.qtd.toLocaleString(LOC)}</td><td class="num sd">${porDia(l.vdia)}</td></tr>`).join("");
   $("aviso-arb").hidden = linhas.length > 0;
   $("aviso-arb").textContent = "Nenhuma oportunidade com esses filtros.";
 }
@@ -1348,12 +1567,12 @@ function desenharLista() {
   $("linhas-compras").innerHTML = itens.map(c => {
     const aVenda = porItem.get(c.id)?.qtd ?? 0, falta = c.fonte === "leilão" && aVenda < c.q;
     return `<tr class="item" data-id="${c.id}"><td class="nome">${iconeHtml(c.i)}<span><span class="q-${c.i.qualidade}">${esc(c.i.nome)}</span>
-        <span class="sm">${c.fonte} · ${moedaOuTraco(c.preco)} cada${falta ? ` · só ${aVenda.toLocaleString("pt-BR")} à venda` : ""}</span></span></td>
-      <td class="num">${c.q.toLocaleString("pt-BR")}</td><td class="num sd">${moedaOuTraco(c.preco)}</td>
+        <span class="sm">${c.fonte} · ${moedaOuTraco(c.preco)} cada${falta ? ` · só ${aVenda.toLocaleString(LOC)} à venda` : ""}</span></span></td>
+      <td class="num">${c.q.toLocaleString(LOC)}</td><td class="num sd">${moedaOuTraco(c.preco)}</td>
       <td class="num">${moedaOuTraco(c.total)}</td><td class="sd">${c.fonte}</td>
-      <td class="num sd ${falta ? "neg" : ""}">${c.fonte === "NPC" ? "–" : aVenda.toLocaleString("pt-BR")}</td></tr>`;
+      <td class="num sd ${falta ? "neg" : ""}">${c.fonte === "NPC" ? "–" : aVenda.toLocaleString(LOC)}</td></tr>`;
   }).join("");
-  const intermediarios = [...fabricar].map(([id, q]) => `${Math.ceil(q - 1e-9).toLocaleString("pt-BR")} × ${infoItem(id).nome}`);
+  const intermediarios = [...fabricar].map(([id, q]) => `${Math.ceil(q - 1e-9).toLocaleString(LOC)} × ${infoItem(id).nome}`);
   $("nota-lista").innerHTML = `Materiais ${completo ? moeda(custo) : "sem preço completo"} · venda líquida ${moeda(bruto)}` +
     (completo ? ` · lucro <span class="${bruto - custo >= 0 ? "pos" : "neg"}">${moedaOuTraco(bruto - custo)}</span>` : "") +
     ` · preços de ${esc(rotulo(casaAtual))}; o total de cada material é o custo de comprar essa quantidade agora, do anúncio mais barato ao mais caro.` +
@@ -1364,7 +1583,7 @@ function desenharLista() {
 async function abrirLista() {
   $("aviso-lista").hidden = false; $("aviso-lista").textContent = "Carregando…"; $("bloco-lista").hidden = true;
   desenharCarteira();
-  [receitas] = await Promise.all([receitas ?? json("dados/receitas.json"), carregarDegraus()]);
+  [receitas] = await Promise.all([carregarReceitas(), carregarDegraus()]);
   calcularReceitas(); desenharLista();
 }
 
@@ -1447,7 +1666,7 @@ function montarCategorias() {
     h += `<button data-classe="${c.id}" class="${aberta && estado.sub == null ? "ativo" : ""}">${esc(c.nome)} <small>${contagem.get(c.id)}</small></button>`;
     if (!aberta) continue;
     const subs = Object.entries(c.sub).filter(([s]) => contagem.has(c.id + "/" + s))
-      .map(([s, nome]) => [s, c.id === ARMAS && NOMES_ARMAS[s] || nome])
+      .map(([s, nome]) => [s, EN && c.id === ARMAS && NOMES_ARMAS[s] || nome])
       .sort((a, b) => c.id === ARMAS ? posicao(ORDEM_ARMAS, +a[0]) - posicao(ORDEM_ARMAS, +b[0]) : a[1].localeCompare(b[1]));
     if (subs.length < 2) continue;
     for (const [s, nome] of subs) {
@@ -1459,7 +1678,7 @@ function montarCategorias() {
       for (const g of grupos) if (g.classe === c.id && g.sub === +s && SLOTS[g.slot]) porSlot.set(g.slot, (porSlot.get(g.slot) || 0) + 1);
       if (porSlot.size < 2) continue;
       for (const slot of Object.keys(SLOTS)) if (porSlot.has(slot))
-        h += `<button data-classe="${c.id}" data-sub="${s}" data-slot="${slot}" class="sub slot ${estado.slot === slot ? "ativo" : ""}">${SLOTS[slot]} <small>${porSlot.get(slot)}</small></button>`;
+        h += `<button data-classe="${c.id}" data-sub="${s}" data-slot="${slot}" class="sub slot ${estado.slot === slot ? "ativo" : ""}">${(EN ? SLOTS : SLOTS_PT)[slot]} <small>${porSlot.get(slot)}</small></button>`;
     }
   }
   $("categorias").innerHTML = h;
@@ -1534,7 +1753,7 @@ function desenhar() {
         <span class="sm">${[g.nivel != null ? `Nível ${g.nivel}` : "", g.req ? `requer ${g.req}` : "",
           g.vdia != null ? `vende ~${porDia(g.vdia)}/dia` : "", g.tend != null && Math.abs(g.tend) >= 5 ? `${pct(g.tend)} na semana` : ""].filter(Boolean).join(" · ")}</span></span><button type="button" class="fav ${prefs.favoritos.includes(g.id) ? "ativo" : ""}" data-fav="${g.id}" title="Favorito" aria-label="Favorito" aria-pressed="${prefs.favoritos.includes(g.id)}">★</button></td>
       <td class="num sd">${g.nivel ?? "–"}</td><td class="num sd">${g.req || "–"}</td>
-      <td class="num">${g.qtd.toLocaleString("pt-BR")}</td>
+      <td class="num">${g.qtd.toLocaleString(LOC)}</td>
       <td class="num sd ${g.tend == null || Math.abs(g.tend) < 5 ? "" : g.tend < 0 ? "pos" : "neg"}">${pct(g.tend)}</td>
       <td class="num sd">${porDia(g.vdia)}</td>
       <td class="num sd">${moeda(g.mercado)}</td></tr>`;
@@ -1542,7 +1761,7 @@ function desenhar() {
     if (varias && aberto)
       for (const v of [...g.variantes].sort((a, b) => (a.min ?? Infinity) - (b.min ?? Infinity)))
         h += `<tr class="variante" data-id="${g.id}" data-variante="${esc(v.variante)}"><td class="num">${moeda(v.min)}</td>
-          ${celulaVariante(g, v)}<td class="num">${v.qtd.toLocaleString("pt-BR")}</td><td class="sd"></td><td class="sd"></td><td class="num sd">${moeda(v.mercado)}</td></tr>`;
+          ${celulaVariante(g, v)}<td class="num">${v.qtd.toLocaleString(LOC)}</td><td class="sd"></td><td class="sd"></td><td class="num sd">${moeda(v.mercado)}</td></tr>`;
   }
   $("linhas").innerHTML = h;
   pontosAbertos.clear();
@@ -1555,7 +1774,7 @@ function desenhar() {
   $("aviso").hidden = filtrados.length > 0;
   $("aviso").textContent = "Nenhum item com esses filtros.";
   const fim = Math.min(inicio + POR_PAGINA, filtrados.length);
-  $("contagem").textContent = filtrados.length ? `${inicio + 1}–${fim} de ${filtrados.length.toLocaleString("pt-BR")} itens` : "";
+  $("contagem").textContent = filtrados.length ? `${inicio + 1}–${fim} de ${filtrados.length.toLocaleString(LOC)} itens` : "";
   $("anterior").disabled = estado.pagina === 0;
   $("proxima").disabled = fim >= filtrados.length;
   for (const th of document.querySelectorAll("th[data-ordem]")) {
@@ -1590,7 +1809,7 @@ async function carregarCasa() {
   $("velho").textContent = parada ? `A coleta parou: a última checagem foi ${haQuanto(checagem.checado_em)}. Os preços são de ${haQuanto(dados.coletado_em)}.`
     : `Os preços estão com ${Math.floor(atraso)} h de atraso: ` + (semChecar != null ? `a Blizzard ainda não publicou preços novos (a coleta checou há ${Math.round(semChecar)} min).`
       : atraso < HORAS_DE_PANE ? "a Blizzard ainda não publicou preços novos." : "a coleta pode ter parado.");
-  $("atualizado").innerHTML = `Dados coletados ${haQuanto(dados.coletado_em)} · ${new Date(dados.coletado_em).toLocaleString("pt-BR")}` +
+  $("atualizado").innerHTML = `Dados coletados ${haQuanto(dados.coletado_em)} · ${new Date(dados.coletado_em).toLocaleString(LOC)}` +
     " · site de fã, sem vínculo com a Blizzard" +
     (meta.addon ? ` · <a href="${esc(meta.addon)}" download title="Mostra estes preços no tooltip dos itens dentro do jogo. Extraia em Interface/AddOns.">Addon para o jogo</a>` : "");
   porItem.clear(); degrausProntos = false;
@@ -1604,10 +1823,19 @@ async function iniciar() {
   [meta, catalogo, bonusJogo] = await Promise.all([json("dados/meta.json"), json("dados/itens.json"),
     json("dados/bonus.json").catch(() => ({bonus: {}, pontos: {}}))]);
   // Nomes em português: troca o nome no catálogo e guarda o inglês na posição 10, para a busca aceitar os dois.
-  $("idioma").textContent = prefs.idioma === "pt" ? "EN" : "PT";
-  if (prefs.idioma === "pt") {
-    const nomes = await json("dados/nomes-pt.json").catch(() => ({}));
-    for (const [id, nome] of Object.entries(nomes)) { const i = catalogo.itens[id]; if (i) { i[10] = i[0]; i[0] = nome; } }
+  $("idioma").textContent = EN ? "PT" : "EN";
+  if (!EN) {
+    const pt = await json("dados/nomes-pt.json").catch(() => ({}));
+    for (const [id, nome] of Object.entries(pt.itens || {})) { const i = catalogo.itens[id]; if (i) { i[10] = i[0]; i[0] = nome; } }
+    // Categorias e subcategorias no idioma da página; armas de uma e de duas mãos têm o mesmo nome na API.
+    for (const [id, c] of Object.entries(pt.classes || {})) {
+      const classe = catalogo.classes[id];
+      if (!classe) continue;
+      classe.nome = c.nome || classe.nome;
+      for (const sub of Object.keys(classe.sub)) if (c.sub[sub])
+        classe.sub[sub] = c.sub[sub] + (+id === ARMAS ? ([1, 5, 8].includes(+sub) ? " (duas mãos)" : [0, 4, 7].includes(+sub) ? " (uma mão)" : "") : "");
+    }
+    profissoesPt = pt.profissoes || {};
   }
   const mercados = [...new Set(meta.casas.map(c => c.grupo))].sort((a, b) => a - b);
   montarSeletorDeCasa(mercados);
@@ -1625,7 +1853,7 @@ async function iniciar() {
   if (g) { $("f-nome").value = g.nome; filtrar(); estado.abertos.add(g.id); desenhar(); }
 }
 
-$("idioma").onclick = () => { prefs.idioma = prefs.idioma === "pt" ? "en" : "pt"; guardarPrefs(); location.reload(); };
+$("idioma").onclick = () => { prefs.lingua = EN ? "pt" : "en"; guardarPrefs(); location.reload(); };
 // A casa padrão é escolha de quem usa, guardada neste navegador: a página sempre abre nela.
 // Sem escolha, vale a do servidor (casa_padrao do config.toml). A última opção do seletor marca a casa atual.
 const casaPadrao = () => prefs.casaPadrao ?? meta.casa_padrao;

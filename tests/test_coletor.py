@@ -150,7 +150,7 @@ class TesteColetor(unittest.TestCase):
         catalogo.traduzir(self.cfg, api_pt)
         catalogo.traduzir(self.cfg, api_pt)
         self.assertEqual(self.consultar("SELECT nome_pt FROM itens WHERE item_id = 720"), [("Luvas de Brigão",)])
-        self.assertEqual(len(api_pt.pedidos), 1)
+        self.assertEqual(sum(c.startswith("/data/wow/item/") for c, _ in api_pt.pedidos), 1)
         # Quem não foi achado só é tentado de novo depois de alguns dias.
         n = len(self.api.pedidos)
         catalogo.catalogar(self.cfg, self.api)
