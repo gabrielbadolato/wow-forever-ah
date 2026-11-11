@@ -42,6 +42,13 @@ h1 { margin: 0; font: 15px var(--titulo); color: var(--ouro); letter-spacing: .4
 .emblema::after { content: ""; position: absolute; inset: 9px; border-radius: 50%;
   box-shadow: inset 0 0 0 2px rgba(90, 60, 0, .55), inset 0 3px 6px rgba(255, 255, 255, .35); }
 
+/* Com o logo oficial carregado (vem do servidor de imagens da Blizzard), o medalhão dá lugar a ele. */
+.emblema img { display: none; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .8)); }
+.emblema.com-logo { left: -20px; top: -34px; width: 88px; height: 72px; border-radius: 0; background: none; box-shadow: none; }
+.emblema.com-logo::after { display: none; }
+.emblema.com-logo img { display: block; }
+.fa { margin: 0; padding: 4px 10px 8px; text-align: center; }
+
 /* ---- Abas penduradas embaixo da janela, como no jogo ---- */
 .barra-abas { position: absolute; top: calc(100% + 3px); left: 0; right: 0; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 16px; padding: 0 8px 0 26px; }
 #abas { display: flex; gap: 4px; }
@@ -225,8 +232,9 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
 @media (max-width: 760px) {
   body { padding: 18px 0 64px; -webkit-tap-highlight-color: transparent; }
   .janela { border-radius: 0; }
-  .barra-titulo { border-radius: 0; padding: 6px 8px 6px 62px; justify-content: flex-start; align-items: center; flex-wrap: nowrap; }
+  .barra-titulo { border-radius: 0; padding: 6px 8px 6px 74px; justify-content: flex-start; align-items: center; flex-wrap: nowrap; }
   .emblema { left: 4px; top: -10px; width: 46px; height: 46px; }
+  .emblema.com-logo { left: -4px; top: -12px; width: 70px; height: 57px; }
   /* As abas viram a barra fixa do rodapé, com a escolha da casa ao lado. */
   .barra-abas { position: fixed; z-index: 5; top: auto; bottom: 0; flex-wrap: nowrap; align-items: center; gap: 6px; padding: 14px 6px 6px;
     background: linear-gradient(transparent, #050607 35%); }
@@ -296,7 +304,8 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
 <div class="janela">
 <header>
   <div class="barra-titulo">
-    <span class="emblema" aria-hidden="true"></span>
+    <span class="emblema"><img alt="World of Warcraft: Forever" onload="this.parentElement.classList.add('com-logo')" onerror="this.remove()"
+      src="https://blz-contentstack-images.akamaized.net/v3/assets/blt9c12f249ac15c7ec/blt527dd61848a757c7/6aa3316cad92093ee45628fd/camelot-logo-gamepage.png?width=220"></span>
     <h1>Casa de Leilões</h1><span class="sub">WoW Forever</span>
     <button type="button" id="idioma" title="Troca o idioma dos nomes dos itens. O resto (tooltips, categorias) fica em inglês.">PT</button>
   </div>
@@ -487,6 +496,7 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
     <div id="aviso-carteira" class="aviso" hidden></div>
   </section>
 </main>
+<p class="sm fa">Site de fã, sem vínculo com a Blizzard Entertainment. World of Warcraft e o logo são marcas da Blizzard.</p>
 </div>
 <div id="dica" hidden></div>
 <script>
@@ -1581,6 +1591,7 @@ async function carregarCasa() {
     : `Os preços estão com ${Math.floor(atraso)} h de atraso: ` + (semChecar != null ? `a Blizzard ainda não publicou preços novos (a coleta checou há ${Math.round(semChecar)} min).`
       : atraso < HORAS_DE_PANE ? "a Blizzard ainda não publicou preços novos." : "a coleta pode ter parado.");
   $("atualizado").innerHTML = `Dados coletados ${haQuanto(dados.coletado_em)} · ${new Date(dados.coletado_em).toLocaleString("pt-BR")}` +
+    " · site de fã, sem vínculo com a Blizzard" +
     (meta.addon ? ` · <a href="${esc(meta.addon)}" download title="Mostra estes preços no tooltip dos itens dentro do jogo. Extraia em Interface/AddOns.">Addon para o jogo</a>` : "");
   porItem.clear(); degrausProntos = false;
   for (const g of grupos) porItem.set(g.id, g);
