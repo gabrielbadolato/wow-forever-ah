@@ -299,7 +299,9 @@ def exportar(cfg):
                 {i: linhas for i, linhas in tooltips.items() if i % PARTES_TOOLTIPS == parte})
     (destino / "tooltips.json").unlink(missing_ok=True)
     _gravar(destino / "nomes-pt.json", dict(con.execute(
-        "SELECT item_id, nome_pt FROM itens WHERE nome_pt IS NOT NULL AND nome_pt != ''")))
+        # Item sem tradução vem da API com o nome em inglês entre colchetes; esses ficam de fora.
+        "SELECT item_id, nome_pt FROM itens WHERE nome_pt IS NOT NULL AND nome_pt != '' "
+        "AND nome_pt NOT LIKE '[%]' AND nome_pt != nome")))
     _gravar(destino / "receitas.json", _receitas(con))
     if bonus.caminho(cfg).exists():
         _gravar(destino / "bonus.json", json.loads(bonus.caminho(cfg).read_text()))

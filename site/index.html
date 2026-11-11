@@ -520,7 +520,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", 
 
 let meta, catalogo, bonusJogo, grupos = [], filtrados = [];
 // Preferências de quem usa, guardadas só neste navegador.
-const prefs = {profissoes: [], favoritos: [], lista: {}, habilidade: {}, modo: null, casa: null, carteira: [], idioma: "en"};
+const prefs = {profissoes: [], favoritos: [], lista: {}, habilidade: {}, modo: null, casa: null, carteira: [], idioma: "en", casaPadrao: null};
 try { Object.assign(prefs, JSON.parse(localStorage.getItem("ah-forever") || "{}")); } catch {}
 const guardarPrefs = () => { try { localStorage.setItem("ah-forever", JSON.stringify(prefs)); } catch {} };
 const alternar = (lista, id) => { const i = lista.indexOf(id); i < 0 ? lista.push(id) : lista.splice(i, 1); guardarPrefs(); };
@@ -1610,22 +1610,42 @@ async function iniciar() {
     for (const [id, nome] of Object.entries(nomes)) { const i = catalogo.itens[id]; if (i) { i[10] = i[0]; i[0] = nome; } }
   }
   const mercados = [...new Set(meta.casas.map(c => c.grupo))].sort((a, b) => a - b);
-  $("casa").innerHTML = mercados.map(n => `<optgroup label="${esc(nomeDoMercado(meta.casas.find(c => c.grupo === n)))}">` + meta.casas.map((c, i) => c.grupo !== n ? "" :
-    `<option value="${i}">${rotulo(c)}${c.id === meta.casa_padrao ? " (padrão)" : ""}</option>`).join("") + "</optgroup>").join("");
+  montarSeletorDeCasa(mercados);
   // Um link direto (#item=…&casa=…) manda; sem ele, volta-se à casa e à aba da última visita.
   const pedido = new URLSearchParams(location.hash.slice(1)), itemPedido = +pedido.get("item") || null;
   const indice = id => meta.casas.findIndex(c => c.id === id);
-  const escolhida = [+pedido.get("casa"), prefs.casa, meta.casa_padrao].map(indice).find(i => i >= 0);
+  // Ordem: link direto, a casa que a pessoa marcou como padrão, a da última visita, a padrão do servidor.
+  const escolhida = [+pedido.get("casa"), prefs.casaPadrao, prefs.casa, meta.casa_padrao].map(indice).find(i => i >= 0);
   $("casa").value = escolhida ?? 0;
   if (itemPedido) estado.modo = "leiloes";
   else if (document.querySelector(`#abas [data-modo="${prefs.modo}"]`)) estado.modo = prefs.modo;
   await carregarCasa();
+  montarSeletorDeCasa();
   const g = itemPedido && porItem.get(itemPedido);
   if (g) { $("f-nome").value = g.nome; filtrar(); estado.abertos.add(g.id); desenhar(); }
 }
 
 $("idioma").onclick = () => { prefs.idioma = prefs.idioma === "pt" ? "en" : "pt"; guardarPrefs(); location.reload(); };
-$("casa").onchange = () => carregarCasa().catch(falhou);
+// A casa padrão é escolha de quem usa, guardada neste navegador: a página sempre abre nela.
+// Sem escolha, vale a do servidor (casa_padrao do config.toml). A última opção do seletor marca a casa atual.
+const casaPadrao = () => prefs.casaPadrao ?? meta.casa_padrao;
+function montarSeletorDeCasa(mercados) {
+  mercados ??= [...new Set(meta.casas.map(c => c.grupo))].sort((a, b) => a - b);
+  const atual = $("casa").value, aqui = meta.casas[atual];
+  $("casa").innerHTML = mercados.map(n => `<optgroup label="${esc(nomeDoMercado(meta.casas.find(c => c.grupo === n)))}">` + meta.casas.map((c, i) => c.grupo !== n ? "" :
+    `<option value="${i}">${rotulo(c)}${c.id === casaPadrao() ? " ★ padrão" : ""}</option>`).join("") + "</optgroup>").join("") +
+    (aqui && aqui.id !== casaPadrao() ? `<optgroup label="Preferência"><option value="padrao">★ Abrir sempre em ${esc(rotulo(aqui))}</option></optgroup>` : "");
+  if (atual !== "") $("casa").value = atual;
+}
+$("casa").onchange = () => {
+  if ($("casa").value === "padrao") {
+    prefs.casaPadrao = casaAtual.id; guardarPrefs();
+    $("casa").value = meta.casas.indexOf(casaAtual);
+    montarSeletorDeCasa();
+    return;
+  }
+  carregarCasa().then(() => montarSeletorDeCasa()).catch(falhou);
+};
 $("abas").onclick = e => {
   const b = e.target.closest("button[data-modo]");
   if (b && b.dataset.modo !== estado.modo) trocarModo(b.dataset.modo);
