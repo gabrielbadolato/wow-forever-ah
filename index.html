@@ -916,7 +916,19 @@ const MINUTOS_SEM_CHECAR = 70;
 const porDia = v => v == null ? "–" : v >= 10 ? Math.round(v).toLocaleString(LOC) : v.toLocaleString(LOC, {maximumFractionDigits: 1});
 const estado = {classe: null, sub: null, slot: null, ordem: "nome", sentido: 1, pagina: 0, abertos: new Set(), comparar: new Set(), periodo: "7d", modo: "leiloes"};
 
+// Os dados ficam no branch "dados", fora do site: cada push no branch do GitHub Pages gera um build
+// e um artefato guardado por 24 h, e a coleta a cada 20 minutos estourava o armazenamento do Actions.
+const BASE_DADOS = "https://raw.githubusercontent.com/gabrielbadolato/wow-forever-ah/dados/";
+let dadosRemotos = true;
 async function json(caminho) {
+  if (dadosRemotos && caminho.startsWith("dados/")) {
+    try {
+      const r = await fetch(BASE_DADOS + caminho.slice(6), {cache: "no-cache"});
+      if (r.ok) return await r.json();
+    } catch {}
+    // Sem o branch de dados (ou sem acesso a ele), vale a cópia publicada junto do site.
+    if (caminho === "dados/meta.json") dadosRemotos = false;
+  }
   const r = await fetch(caminho, {cache: "no-cache"});
   if (!r.ok) throw new Error(`${caminho}: HTTP ${r.status}`);
   return r.json();
