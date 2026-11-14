@@ -32,7 +32,7 @@ body { margin: 0; min-height: 100vh; padding: 26px 16px 74px; color: var(--texto
   font: 14px/1.35 Arial, "Helvetica Neue", Helvetica, sans-serif; }
 
 /* ---- Moldura da janela ---- */
-.janela { position: relative; display: flex; flex-direction: column; max-width: 1240px; margin: 0 auto;
+.janela { position: relative; display: flex; flex-direction: column; max-width: 1840px; margin: 0 auto;
   background: var(--janela); border: 1px solid #000; border-radius: 6px;
   box-shadow: 0 0 0 1px #6b6b6b, 0 0 0 3px #242424, 0 0 0 4px #000, 0 20px 60px rgba(0, 0, 0, .8); }
 header { display: contents; }
@@ -128,13 +128,15 @@ button.acao:disabled { cursor: default; color: #7d7d7d; background: linear-gradi
 .rolagem { overflow-x: auto; }
 table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 560px; }
 thead th { position: sticky; top: 0; z-index: 1; }
-th { text-align: left; font: 12px var(--titulo); color: #fff; padding: 6px 10px; white-space: nowrap; user-select: none; text-shadow: 0 1px 0 #000;
+th { text-align: left; font: 12px var(--titulo); color: #fff; padding: 6px 8px; white-space: nowrap; user-select: none; text-shadow: 0 1px 0 #000;
   background: linear-gradient(#3f3f3f, #252525); border: 1px solid #000; border-left: 0; border-radius: 5px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), inset 0 0 0 1px rgba(110, 110, 110, .3); }
 th[data-ordem] { cursor: pointer; }
 th[data-ordem]:hover { color: var(--ouro); background: linear-gradient(#4d4d4d, #2e2e2e); }
 th.num, td.num { text-align: right; }
-td { padding: 3px 10px; white-space: nowrap; font: 13.5px var(--titulo); }
+td { padding: 3px 8px; white-space: nowrap; font: 13.5px var(--titulo); }
+/* Categoria da receita: pode quebrar em duas linhas para sobrar largura ao nome. */
+td.cat { white-space: normal; min-width: 90px; }
 tr.item { background: var(--fundo-lista); }
 tr.item:nth-of-type(even) { background: var(--zebra); }
 tr.item:hover { background: linear-gradient(90deg, rgba(255, 209, 0, .22), rgba(255, 209, 0, .07)); }
@@ -184,6 +186,8 @@ tr.detalhe td { white-space: normal; padding: 10px 14px 12px 42px; background: #
 .atributos .par, #dica .par { display: flex; justify-content: space-between; gap: 24px; color: inherit; }
 .reagentes { min-width: 0; width: auto; margin-bottom: 10px; }
 .reagentes td.nome { width: auto; }
+/* Dentro do painel aberto as células quebram linha; números e quantidades não devem. */
+.reagentes td.num, .comparar td.num, .comparar th { white-space: nowrap; width: auto; }
 .reagentes td { padding: 2px 16px 2px 0; background: none !important; box-shadow: none !important; font-size: 13px; color: var(--texto); }
 .reagentes td.nome img, .reagentes .semicone { width: 20px; height: 20px; }
 .reagentes .fonte { color: var(--fraco); font-family: Arial, sans-serif; }
@@ -265,7 +269,12 @@ html[lang=en] [data-l=pt], html:not([lang=en]) [data-l=en] { display: none; }
   body { height: 100vh; overflow: hidden; }
   .janela { height: 100%; }
   #v-leiloes .rolagem { flex: 1; overflow: auto; }
-  #v-prof, #v-resumo, #v-arb, #v-lista, #v-ofertas { overflow-y: auto; }
+  /* Nas outras abas quem rola é o painel inteiro, para os dois lados: a barra horizontal fica sempre
+     à vista no pé do painel (dentro da tabela ela ficaria lá embaixo, depois da última linha), e o
+     cabeçalho da tabela gruda no topo. Filtros, títulos e notas não andam para o lado. */
+  #v-prof, #v-resumo, #v-arb, #v-lista, #v-ofertas { overflow: auto; }
+  :is(#v-prof, #v-arb, #v-lista, #v-ofertas) .rolagem { overflow: visible; }
+  :is(#v-prof, #v-arb, #v-lista, #v-ofertas) :is(form, .titulo-bloco, .nota, .aviso) { position: sticky; left: 0; }
   #v-prof > *, #v-resumo > *, #v-arb > *, #v-lista > *, #v-ofertas > *, #bloco-mat > *, #bloco-rec > * { flex: none; }
 }
 @media (max-width: 760px) {
@@ -1461,7 +1470,7 @@ function desenharProf() {
         ${dif != null ? `<span class="variantes dif-${dif}" title="Fica amarela com ${faixa[0]} de habilidade e cinza com ${faixa[1]}">${CORES_DIF[dif]}</span>` : ""}
         ${l.recarga ? `<span class="variantes" title="Só dá para fabricar uma vez a cada ${textoRecarga(l.recarga)}">recarga ${textoRecarga(l.recarga)}</span>` : ""}
         <span class="sm">${esc(l.categoria)}${margem === "–" ? "" : ` · margem ${margem}`}${l.vdia != null ? ` · vende ~${porDia(l.vdia)}/dia${textoMargem(l.verro)}` : ""}</span></span><button type="button" class="fav mais ${prefs.lista[l.rid] ? "ativo" : ""}" data-lista="${l.rid}" title="${prefs.lista[l.rid] ? "Tirar da lista de compras" : "Pôr na lista de compras"}" aria-label="Lista de compras" aria-pressed="${!!prefs.lista[l.rid]}">${prefs.lista[l.rid] ? "✓" : "＋"}</button></td>
-      <td class="sd">${esc(l.categoria)}</td>
+      <td class="sd cat">${esc(l.categoria)}</td>
       <td class="num sd">${moedaOuTraco(l.custo)}</td><td class="num sd">${moedaOuTraco(l.bruto)}</td>
       <td class="num ${sinal}">${moedaOuTraco(l.lucro)}</td>
       <td class="num sd ${sinal}">${margem}</td>
